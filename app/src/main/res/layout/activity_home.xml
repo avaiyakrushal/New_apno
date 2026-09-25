@@ -1,0 +1,34 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/navy" android:padding="18dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Apno" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/white" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" android:text="Voice rooms on this phone"
+        android:textColor="@color/muted" android:textSize="15sp" />
+    <Button android:id="@+id/create_post" android:layout_width="match_parent" android:layout_height="54dp"
+        android:layout_marginTop="16dp" android:text="Write a local post" android:textAllCaps="false"
+        android:backgroundTint="@color/accent" android:textColor="@color/white" />
+    <Button android:id="@+id/create_photo_post" android:layout_width="match_parent" android:layout_height="54dp"
+        android:layout_marginTop="10dp" android:text="Post a photo from gallery" android:textAllCaps="false"
+        android:backgroundTint="@color/accent" android:textColor="@color/white" />
+    <Button android:id="@+id/create_room" android:layout_width="match_parent" android:layout_height="54dp"
+        android:layout_marginTop="10dp" android:text="Create a preview room" android:textAllCaps="false"
+        android:backgroundTint="@color/accent" android:textColor="@color/white" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="20dp" android:text="Local feed" android:textColor="@color/white"
+                android:textSize="20sp" android:textStyle="bold" />
+            <LinearLayout android:id="@+id/posts" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="20dp" android:text="Your rooms" android:textColor="@color/white"
+                android:textSize="20sp" android:textStyle="bold" />
+            <LinearLayout android:id="@+id/rooms" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+    <Button android:id="@+id/profile" android:layout_width="match_parent" android:layout_height="52dp"
+        android:text="My profile" android:textAllCaps="false" />
+</LinearLayout>
