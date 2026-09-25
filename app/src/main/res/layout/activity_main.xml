@@ -1,0 +1,27 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:background="@drawable/apno_scene">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:minHeight="600dp" android:orientation="vertical" android:gravity="center_horizontal"
+        android:padding="28dp">
+        <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
+        <ImageView android:layout_width="112dp" android:layout_height="112dp" android:src="@drawable/apno_mark" android:contentDescription="Apno logo" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="APNO" android:textColor="@color/white" android:textStyle="bold" android:textSize="42sp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="મળો • વાત કરો • સાથે રહો" android:textColor="@color/muted" android:textSize="16sp" />
+        <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
+        <Button android:id="@+id/google" android:layout_width="match_parent" android:layout_height="56dp"
+            android:text="Continue with Google" android:textAllCaps="false" android:background="@drawable/apno_button" android:backgroundTint="@null" android:textColor="@color/white" />
+        <Button android:id="@+id/facebook" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="10dp" android:text="Continue with Facebook" android:textAllCaps="false" android:background="@drawable/apno_button" android:backgroundTint="@null" android:textColor="@color/white" />
+        <Button android:id="@+id/mobile" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="10dp" android:text="Continue with Mobile Number" android:textAllCaps="false" android:background="@drawable/apno_button" android:backgroundTint="@null" android:textColor="@color/white" />
+        <Button android:id="@+id/explore" android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="18dp" android:text="એપનું પ્રિવ્યૂ જુઓ" android:textAllCaps="false"
+            android:background="@drawable/apno_button_gold" android:backgroundTint="@null" android:textColor="@color/navy" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="18dp" android:gravity="center" android:textColor="@color/muted"
+            android:text="લોગિન અને લાઇવ રૂમ આગામી તબક્કામાં જોડાશે" />
+    </LinearLayout>
+</ScrollView>
