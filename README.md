@@ -1,20 +1,7 @@
-# Apno Android
+# Apno Android prototype (version 0.2)
 
-Apno is an original social app prototype with its own A logo and teal and gold welcome screen.
+This source project has a white five-tab home screen modeled on the supplied layout references. Party offers local posts and room previews. Discover lists those local rooms. Game has a working single-player dice roll; other game cards are explicit placeholders. Messages awaits account and online chat integration. Profile has editable name, bio and gallery photo.
 
-## What works
-- Explore local preview without sign in
-- Write, edit captions, and delete up to 50 text, photo, or video posts stored on this device
-- Search local post captions, like, save, and share posts; add and remove up to 50 local comments per post
-- Create, open, and delete room previews on this device
-- Navigate Party, Game, Discover, Messages, and Me tabs. Party has Hot, Event, Date, Music, and Game filters for locally created rooms; Discover lists those same local rooms.
-- Set a local profile name and bio, choose a gallery photo, see local post count, and receive a local preview ID
+Google, Facebook and mobile sign-in remain unconnected. Rooms do not send audio. This is not yet an online social app. Existing locally saved posts and profile settings use the same preferences as version 0.1.
 
-Google, Facebook, and phone sign in are placeholders. Games and online messaging are not connected. Rooms do not transmit audio or connect people. Do not distribute this preview as a functioning social network.
-
-## Build on GitHub without a computer
-The repository includes `.github/workflows/android.yml`. On a push or manual workflow run, GitHub Actions builds a debug APK and stores it in the `apno-debug-apk` artifact. The GitHub mobile app is for viewing the repository; APK artifacts may require opening GitHub in a mobile browser. An Actions run is needed to confirm this build succeeds.
-
-Android Gradle Plugin 8.11.0, Gradle 8.13, JDK 17, compile SDK 34, minimum Android 6.0. No service credentials or private keys are included.
-
-Photo and video posts can be selected from the Android document picker and kept locally on this device. Videos open in an installed video player. Existing plain-text posts remain readable. Shared media availability depends on the selected receiving app.
+The older `Apno-latest-2026-09-26.apk` is version 0.1 and does not contain these changes. Build this source with the GitHub Actions workflow in `.github/workflows/android.yml` to obtain a new APK. A successful workflow run and an on-device check are still required.
