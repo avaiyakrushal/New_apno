@@ -10,6 +10,9 @@ import android.text.InputFilter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.view.View;
+import android.graphics.Typeface;
 import java.util.Locale;
 import java.util.UUID;
 import org.json.JSONArray;
@@ -49,6 +52,14 @@ public class ProfileActivity extends Activity {
             startActivityForResult(intent, PICK_PHOTO);
         });
         findViewById(R.id.back).setOnClickListener(v -> finish());
+        findViewById(R.id.profile_favorites).setOnClickListener(v -> showRecords(false));
+        findViewById(R.id.profile_follow).setOnClickListener(v -> showRecords(true));
+        findViewById(R.id.profile_tab_party).setOnClickListener(v -> goHome("party"));
+        findViewById(R.id.profile_tab_game).setOnClickListener(v -> goHome("game"));
+        findViewById(R.id.profile_tab_discover).setOnClickListener(v -> goHome("discover"));
+        findViewById(R.id.profile_tab_messages).setOnClickListener(v -> goHome("messages"));
+        findViewById(R.id.profile_tab_me).setOnClickListener(v -> showRecords(false));
+        showRecords(false);
     }
 
     @Override protected void onResume() {
@@ -57,7 +68,61 @@ public class ProfileActivity extends Activity {
         int count = 0;
         try { count = new JSONArray(data.getString("posts", "[]")).length(); }
         catch (Exception ignored) { }
-        ((TextView) findViewById(R.id.post_count)).setText(count + " local posts");
+        ((TextView) findViewById(R.id.post_count)).setText(count + (count == 1 ? " post" : " posts"));
+        showRecords(false);
+    }
+
+    private void goHome(String tab) {
+        Intent intent = new Intent(this, HomeActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("open_tab", tab);
+        startActivity(intent);
+        finish();
+    }
+
+    private void showRecords(boolean following) {
+        if (data == null) return;
+        ((TextView) findViewById(R.id.profile_favorites)).setTextColor(getColor(following ? R.color.subtle : R.color.ink));
+        ((TextView) findViewById(R.id.profile_follow)).setTextColor(getColor(following ? R.color.ink : R.color.subtle));
+        ((TextView) findViewById(R.id.record_title)).setText(following ? "Following" : "Party Records");
+        LinearLayout records = findViewById(R.id.profile_records);
+        records.removeAllViews();
+        if (following) {
+            addRecord(records, "People you follow will appear here when accounts are connected.", false, null);
+            return;
+        }
+        try {
+            JSONArray rooms = new JSONArray(data.getString("rooms", "[]"));
+            if (rooms.length() == 0) {
+                addRecord(records, "No party rooms yet. Create one from the Party tab.", false, null);
+                return;
+            }
+            for (int i = rooms.length() - 1; i >= 0; i--) {
+                org.json.JSONObject room = rooms.optJSONObject(i);
+                String title = room == null ? rooms.optString(i) : room.optString("title");
+                String category = room == null ? "Party" : room.optString("category", "Party");
+                addRecord(records, title + "\n" + category + " · On this phone", true, title);
+            }
+        } catch (Exception error) {
+            addRecord(records, "Unable to read local rooms.", false, null);
+        }
+    }
+
+    private void addRecord(LinearLayout parent, String label, boolean active, String title) {
+        TextView row = new TextView(this);
+        row.setText((active ? "🎙  " : "") + label);
+        row.setTextColor(getColor(active ? R.color.ink : R.color.subtle));
+        row.setTextSize(17);
+        row.setTypeface(null, active ? Typeface.BOLD : Typeface.NORMAL);
+        row.setPadding(12, 22, 12, 22);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = (int) (8 * getResources().getDisplayMetrics().density);
+        parent.addView(row, params);
+        if (active) row.setOnClickListener(v -> {
+            Intent intent = new Intent(this, RoomActivity.class);
+            intent.putExtra("room_name", title);
+            startActivity(intent);
+        });
     }
 
     private void editBio() {

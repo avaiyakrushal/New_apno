@@ -64,6 +64,23 @@ public class HomeActivity extends Activity {
         });
         showRooms();
         showPosts();
+        openRequestedTab(getIntent());
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openRequestedTab(intent);
+    }
+
+    private void openRequestedTab(Intent intent) {
+        String tab = intent == null ? "party" : intent.getStringExtra("open_tab");
+        if ("game".equals(tab)) selectTab(R.id.game_panel, R.id.tab_game, "Game");
+        else if ("discover".equals(tab)) {
+            showDiscoverRooms();
+            selectTab(R.id.discover_panel, R.id.tab_discover, "Discover");
+        } else if ("messages".equals(tab)) selectTab(R.id.messages_panel, R.id.tab_messages, "Messages");
+        else selectTab(R.id.party_panel, R.id.tab_party, "Apno");
     }
 
     private void setupNavigation() {
@@ -646,16 +663,28 @@ public class HomeActivity extends Activity {
             JSONObject room = list.optJSONObject(i);
             String title = room == null ? list.optString(i) : room.optString("title");
             String category = room == null ? "Hot" : room.optString("category", "Hot");
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackgroundColor(getColor(R.color.line));
+            TextView art = new TextView(this);
+            art.setText("♫  " + category + "\n\n" + title);
+            art.setTextSize(22);
+            art.setTypeface(null, android.graphics.Typeface.BOLD);
+            art.setTextColor(getColor(R.color.ink));
+            art.setPadding(dp(18), dp(20), dp(18), dp(20));
+            art.setBackgroundColor("Music".equals(category) ? 0xFFFFE6F0 :
+                "Game".equals(category) ? 0xFFE0DFFF : 0xFFFFF0BE);
+            card.addView(art, new LinearLayout.LayoutParams(-1, dp(150)));
             TextView row = new TextView(this);
-            row.setText(category + "  ·  " + title + "  ›");
+            row.setText("● Local room  ·  " + title + "  ›");
             row.setTextColor(getColor(R.color.ink));
-            row.setTextSize(18);
-            row.setPadding(20, 24, 20, 24);
-            row.setBackgroundColor(getColor(R.color.line));
+            row.setTextSize(16);
+            row.setPadding(dp(18), dp(18), dp(18), dp(18));
+            card.addView(row);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-            lp.topMargin = 12;
-            discoverRooms.addView(row, lp);
-            row.setOnClickListener(v -> openRoom(title));
+            lp.topMargin = dp(18);
+            discoverRooms.addView(card, lp);
+            card.setOnClickListener(v -> openRoom(title));
         }
     }
 
