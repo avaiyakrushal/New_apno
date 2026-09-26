@@ -1,34 +1,88 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="@color/navy" android:padding="18dp">
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="Apno" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/white" />
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="4dp" android:text="Voice rooms on this phone"
-        android:textColor="@color/muted" android:textSize="15sp" />
-    <Button android:id="@+id/create_post" android:layout_width="match_parent" android:layout_height="54dp"
-        android:layout_marginTop="16dp" android:text="Write a local post" android:textAllCaps="false"
-        android:backgroundTint="@color/accent" android:textColor="@color/white" />
-    <Button android:id="@+id/create_photo_post" android:layout_width="match_parent" android:layout_height="54dp"
-        android:layout_marginTop="10dp" android:text="Post a photo from gallery" android:textAllCaps="false"
-        android:backgroundTint="@color/accent" android:textColor="@color/white" />
-    <Button android:id="@+id/create_room" android:layout_width="match_parent" android:layout_height="54dp"
-        android:layout_marginTop="10dp" android:text="Create a preview room" android:textAllCaps="false"
-        android:backgroundTint="@color/accent" android:textColor="@color/white" />
-    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="20dp" android:text="Local feed" android:textColor="@color/white"
-                android:textSize="20sp" android:textStyle="bold" />
-            <LinearLayout android:id="@+id/posts" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:orientation="vertical" />
-            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginTop="20dp" android:text="Your rooms" android:textColor="@color/white"
-                android:textSize="20sp" android:textStyle="bold" />
-            <LinearLayout android:id="@+id/rooms" android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:orientation="vertical" />
+    android:orientation="vertical" android:background="@color/navy">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:padding="18dp">
+        <TextView android:id="@+id/section_title" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="Apno" android:textSize="28sp" android:textStyle="bold" android:textColor="@color/white" />
+        <TextView android:id="@+id/top_search" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="⌕" android:textSize="30sp"
+            android:contentDescription="Search posts" android:padding="8dp" android:textColor="@color/white" />
+    </LinearLayout>
+    <ScrollView android:id="@+id/content_scroll" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="18dp">
+            <LinearLayout android:id="@+id/party_panel" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical">
+                <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:scrollbars="none">
+                    <LinearLayout android:id="@+id/categories" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:orientation="horizontal" />
+                </HorizontalScrollView>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="Your party rooms"
+                    android:textColor="@color/white" android:textSize="20sp" android:textStyle="bold" />
+                <LinearLayout android:id="@+id/rooms" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+                <Button android:id="@+id/create_room" android:layout_width="match_parent" android:layout_height="54dp"
+                    android:layout_marginTop="12dp" android:text="Create a local party room" android:textAllCaps="false" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp" android:text="Your posts"
+                    android:textColor="@color/white" android:textSize="20sp" android:textStyle="bold" />
+                <EditText android:id="@+id/search_posts" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:hint="Search your posts"
+                    android:singleLine="true" android:inputType="text"
+                    android:textColor="@color/white" android:textColorHint="@color/muted" />
+                <Button android:id="@+id/create_post" android:layout_width="match_parent" android:layout_height="52dp"
+                    android:text="Write a post" android:textAllCaps="false" />
+                <Button android:id="@+id/create_photo_post" android:layout_width="match_parent" android:layout_height="52dp"
+                    android:text="Post a photo" android:textAllCaps="false" />
+                <Button android:id="@+id/create_video_post" android:layout_width="match_parent" android:layout_height="52dp"
+                    android:text="Post a video" android:textAllCaps="false" />
+                <LinearLayout android:id="@+id/posts" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp" android:text="Saved posts" android:textColor="@color/white"
+                    android:textSize="20sp" android:textStyle="bold" />
+                <LinearLayout android:id="@+id/saved_posts" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/game_panel" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Game" android:textColor="@color/white" android:textSize="25sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp" android:text="Games are being prepared for Apno."
+                    android:textColor="@color/muted" android:textSize="17sp" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/discover_panel" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Discover" android:textColor="@color/white" android:textSize="25sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp" android:text="Explore your local party rooms by category."
+                    android:textColor="@color/muted" android:textSize="17sp" />
+                <LinearLayout android:id="@+id/discover_rooms" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" />
+            </LinearLayout>
+            <LinearLayout android:id="@+id/messages_panel" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Messages" android:textColor="@color/white" android:textSize="25sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp" android:text="No conversations yet. Messaging will be available when accounts and online connection are ready."
+                    android:textColor="@color/muted" android:textSize="17sp" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
-    <Button android:id="@+id/profile" android:layout_width="match_parent" android:layout_height="52dp"
-        android:text="My profile" android:textAllCaps="false" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="64dp"
+        android:orientation="horizontal" android:gravity="center_vertical" android:background="@color/surface">
+        <TextView android:id="@+id/tab_party" style="@style/ApnoTab" android:text="⌂\nParty" />
+        <TextView android:id="@+id/tab_game" style="@style/ApnoTab" android:text="▣\nGame" />
+        <TextView android:id="@+id/tab_discover" style="@style/ApnoTab" android:text="◇\nDiscover" />
+        <TextView android:id="@+id/tab_messages" style="@style/ApnoTab" android:text="☏\nMessages" />
+        <TextView android:id="@+id/tab_me" style="@style/ApnoTab" android:text="♙\nMe" />
+    </LinearLayout>
 </LinearLayout>
