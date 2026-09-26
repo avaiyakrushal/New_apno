@@ -5,4 +5,8 @@
     <color name="muted">#BBC5E0</color>
     <color name="white">#FFFFFF</color>
     <color name="yellow">#FFF023</color>
+    <color name="paper">#FFFFFF</color>
+    <color name="ink">#171717</color>
+    <color name="subtle">#858585</color>
+    <color name="line">#F1F1F4</color>
 </resources>
