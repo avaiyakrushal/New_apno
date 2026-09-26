@@ -30,6 +30,7 @@ public class HomeActivity extends Activity {
     private LinearLayout savedPostsView;
     private EditText searchPosts;
     private LinearLayout discoverRooms;
+    private LinearLayout messageList;
     private String selectedCategory = "Hot";
     private static final String[] CATEGORIES = { "Hot", "Event", "Date", "Music", "Game" };
 
@@ -44,6 +45,7 @@ public class HomeActivity extends Activity {
         posts = findViewById(R.id.posts);
         savedPostsView = findViewById(R.id.saved_posts);
         discoverRooms = findViewById(R.id.discover_rooms);
+        messageList = findViewById(R.id.message_list);
         setupNavigation();
         showGames();
         showCategories();
@@ -57,6 +59,7 @@ public class HomeActivity extends Activity {
         findViewById(R.id.create_photo_post).setOnClickListener(v -> pickPostPhoto());
         findViewById(R.id.create_video_post).setOnClickListener(v -> pickPostVideo());
         findViewById(R.id.create_room).setOnClickListener(v -> createRoom());
+        findViewById(R.id.new_note).setOnClickListener(v -> composeNote());
         findViewById(R.id.top_search).setOnClickListener(v -> {
             selectTab(R.id.party_panel, R.id.tab_party, "Apno");
             searchPosts.requestFocus();
@@ -64,6 +67,7 @@ public class HomeActivity extends Activity {
         });
         showRooms();
         showPosts();
+        showMessages();
         openRequestedTab(getIntent());
     }
 
@@ -686,6 +690,103 @@ public class HomeActivity extends Activity {
             discoverRooms.addView(card, lp);
             card.setOnClickListener(v -> openRoom(title));
         }
+    }
+
+    private JSONArray savedNotes() {
+        try { return new JSONArray(data.getString("private_notes", "[]")); }
+        catch (Exception ignored) { return new JSONArray(); }
+    }
+
+    private void composeNote() {
+        EditText input = new EditText(this);
+        input.setHint("Write a note for yourself");
+        input.setMinLines(3);
+        input.setFilters(new InputFilter[] { new InputFilter.LengthFilter(500) });
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("New private note")
+            .setView(input).setNegativeButton("Cancel", null)
+            .setPositiveButton("Save", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            .setOnClickListener(v -> {
+                String body = input.getText().toString().trim();
+                if (body.isEmpty()) { input.setError("Write a note first"); return; }
+                JSONArray next = new JSONArray();
+                JSONObject note = new JSONObject();
+                try {
+                    note.put("body", body);
+                    note.put("time", System.currentTimeMillis());
+                } catch (Exception error) { return; }
+                next.put(note);
+                JSONArray previous = savedNotes();
+                for (int i = 0; i < Math.min(previous.length(), 49); i++) next.put(previous.opt(i));
+                data.edit().putString("private_notes", next.toString()).apply();
+                dialog.dismiss();
+                showMessages();
+            }));
+        dialog.show();
+    }
+
+    private void showMessages() {
+        messageList.removeAllViews();
+        JSONArray notes = savedNotes();
+        if (notes.length() == 0) {
+            TextView empty = new TextView(this);
+            empty.setText("No messages yet. Tap + to save a private note on this phone.");
+            empty.setTextSize(16);
+            empty.setTextColor(getColor(R.color.subtle));
+            empty.setPadding(dp(8), dp(32), dp(8), dp(32));
+            messageList.addView(empty);
+            return;
+        }
+        for (int i = 0; i < notes.length(); i++) {
+            final int position = i;
+            JSONObject note = notes.optJSONObject(i);
+            if (note == null) continue;
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(4), dp(16), dp(4), dp(16));
+            TextView avatar = new TextView(this);
+            avatar.setText("✎");
+            avatar.setTextSize(27);
+            avatar.setGravity(android.view.Gravity.CENTER);
+            avatar.setTextColor(getColor(R.color.ink));
+            avatar.setBackgroundColor(getColor(R.color.yellow));
+            row.addView(avatar, new LinearLayout.LayoutParams(dp(54), dp(54)));
+            LinearLayout copy = new LinearLayout(this);
+            copy.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(0, -2, 1);
+            copyParams.leftMargin = dp(16);
+            row.addView(copy, copyParams);
+            TextView heading = new TextView(this);
+            heading.setText("My private note");
+            heading.setTextSize(18);
+            heading.setTypeface(null, android.graphics.Typeface.BOLD);
+            heading.setTextColor(getColor(R.color.ink));
+            copy.addView(heading);
+            TextView preview = new TextView(this);
+            preview.setText(note.optString("body"));
+            preview.setSingleLine(true);
+            preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            preview.setTextSize(15);
+            preview.setTextColor(getColor(R.color.subtle));
+            copy.addView(preview);
+            messageList.addView(row);
+            row.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("My private note").setMessage(note.optString("body"))
+                .setNegativeButton("Close", null)
+                .setPositiveButton("Delete", (dialog, which) -> new AlertDialog.Builder(this)
+                    .setMessage("Delete this note from this phone?")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete", (confirm, choice) -> deleteNote(position)).show())
+                .show());
+        }
+    }
+
+    private void deleteNote(int position) {
+        JSONArray previous = savedNotes();
+        JSONArray next = new JSONArray();
+        for (int i = 0; i < previous.length(); i++) if (i != position) next.put(previous.opt(i));
+        data.edit().putString("private_notes", next.toString()).apply();
+        showMessages();
     }
 
     private void deleteRoom(int position) {
