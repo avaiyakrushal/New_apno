@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import java.util.Locale;
 import java.util.UUID;
+import org.json.JSONArray;
 
 public class ProfileActivity extends Activity {
     private SharedPreferences data;
@@ -30,6 +31,7 @@ public class ProfileActivity extends Activity {
         String savedPhoto = data.getString("photo_uri", null);
         if (savedPhoto != null) showPhoto(Uri.parse(savedPhoto));
         nameView.setText(data.getString("name", "Your name"));
+        ((TextView) findViewById(R.id.bio)).setText(data.getString("bio", "Add a short bio"));
         String id = data.getString("local_id", null);
         if (id == null) {
             id = UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.US);
@@ -37,13 +39,38 @@ public class ProfileActivity extends Activity {
         }
         ((TextView) findViewById(R.id.preview_id)).setText("Local preview ID: " + id);
         findViewById(R.id.edit_name).setOnClickListener(v -> editName());
+        findViewById(R.id.edit_bio).setOnClickListener(v -> editBio());
         findViewById(R.id.choose_photo).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.setType("image/*");
             intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
             startActivityForResult(intent, PICK_PHOTO);
         });
         findViewById(R.id.back).setOnClickListener(v -> finish());
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (data == null) return;
+        int count = 0;
+        try { count = new JSONArray(data.getString("posts", "[]")).length(); }
+        catch (Exception ignored) { }
+        ((TextView) findViewById(R.id.post_count)).setText(count + " local posts");
+    }
+
+    private void editBio() {
+        EditText input = new EditText(this);
+        input.setText(data.getString("bio", ""));
+        input.setHint("Tell people about yourself");
+        input.setFilters(new InputFilter[] { new InputFilter.LengthFilter(160) });
+        new AlertDialog.Builder(this).setTitle("Your bio").setView(input)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save", (dialog, which) -> {
+                String bio = input.getText().toString().trim();
+                data.edit().putString("bio", bio).apply();
+                ((TextView) findViewById(R.id.bio)).setText(bio.isEmpty() ? "Add a short bio" : bio);
+            }).show();
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent result) {
