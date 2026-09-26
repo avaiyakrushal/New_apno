@@ -1,33 +1,62 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/paper">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="My profile"
-            android:textSize="30sp" android:textStyle="bold" android:textColor="@color/ink" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
-            android:gravity="center_vertical" android:layout_marginTop="30dp">
-            <ImageView android:id="@+id/profile_photo" android:layout_width="112dp" android:layout_height="112dp"
-                android:src="@drawable/apno_mark" android:scaleType="centerCrop" android:contentDescription="Profile photo" />
-            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                android:orientation="vertical" android:paddingLeft="18dp">
-                <TextView android:id="@+id/name" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:text="Your name" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/ink" />
-                <TextView android:id="@+id/preview_id" android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" android:text="Local preview ID" android:textColor="@color/subtle" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/paper">
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="20dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="☰" android:textSize="28sp" android:textColor="@color/ink" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="30dp">
+                <ImageView android:id="@+id/profile_photo" android:layout_width="108dp" android:layout_height="108dp"
+                    android:src="@drawable/apno_mark" android:scaleType="centerCrop" android:contentDescription="Profile photo" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:orientation="vertical" android:paddingLeft="18dp">
+                    <TextView android:id="@+id/name" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:text="Your name" android:textSize="23sp" android:textStyle="bold" android:textColor="@color/ink" />
+                    <TextView android:id="@+id/preview_id" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" android:text="Local preview ID" android:textColor="@color/subtle" />
+                    <TextView android:id="@+id/post_count" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:text="0 posts" android:textColor="@color/ink" android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
+            <TextView android:id="@+id/bio" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="22dp" android:text="Add a short bio" android:textColor="@color/subtle" android:textSize="16sp" />
+            <TextView android:layout_width="match_parent" android:layout_height="70dp" android:layout_marginTop="22dp"
+                android:gravity="center_vertical" android:paddingLeft="20dp" android:text="♛  My Apno Space"
+                android:textColor="@color/ink" android:textStyle="bold" android:textSize="20sp"
+                android:background="@drawable/profile_banner" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginTop="26dp">
+                <TextView android:id="@+id/profile_favorites" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Favorites" android:textColor="@color/ink" android:textSize="22sp" android:textStyle="bold" android:padding="8dp" />
+                <TextView android:id="@+id/profile_follow" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Follow" android:textColor="@color/subtle" android:textSize="20sp" android:padding="8dp" android:layout_marginLeft="20dp" />
+            </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="14dp" android:background="@color/line" />
+            <TextView android:id="@+id/record_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="28dp" android:text="Party Records" android:textColor="@color/ink"
+                android:textSize="20sp" android:textStyle="bold" />
+            <LinearLayout android:id="@+id/profile_records" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp"
+                android:text="Edit profile" android:textColor="@color/ink" android:textSize="20sp" android:textStyle="bold" />
+            <Button android:id="@+id/edit_name" android:layout_width="match_parent" android:layout_height="50dp"
+                android:layout_marginTop="12dp" android:text="Edit name" android:textAllCaps="false" />
+            <Button android:id="@+id/choose_photo" android:layout_width="match_parent" android:layout_height="50dp"
+                android:layout_marginTop="8dp" android:text="Choose profile photo" android:textAllCaps="false" />
+            <Button android:id="@+id/edit_bio" android:layout_width="match_parent" android:layout_height="50dp"
+                android:layout_marginTop="8dp" android:text="Edit bio" android:textAllCaps="false" />
+            <Button android:id="@+id/back" android:layout_width="match_parent" android:layout_height="50dp"
+                android:layout_marginTop="8dp" android:text="Back to Apno" android:textAllCaps="false" />
         </LinearLayout>
-        <TextView android:id="@+id/bio" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="24dp" android:text="Add a short bio" android:textColor="@color/ink" android:textSize="16sp" />
-        <TextView android:id="@+id/post_count" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="24dp" android:text="0 local posts" android:textColor="@color/subtle" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp"
-            android:text="Profile settings" android:textColor="@color/ink" android:textStyle="bold" android:textSize="22sp" />
-        <Button android:id="@+id/edit_name" android:layout_width="match_parent" android:layout_height="55dp"
-            android:layout_marginTop="18dp" android:text="Edit name" android:textAllCaps="false" />
-        <Button android:id="@+id/choose_photo" android:layout_width="match_parent" android:layout_height="55dp"
-            android:layout_marginTop="10dp" android:text="Choose profile photo" android:textAllCaps="false" />
-        <Button android:id="@+id/edit_bio" android:layout_width="match_parent" android:layout_height="55dp"
-            android:layout_marginTop="10dp" android:text="Edit bio" android:textAllCaps="false" />
-        <Button android:id="@+id/back" android:layout_width="match_parent" android:layout_height="55dp"
-            android:layout_marginTop="10dp" android:text="Back to Apno" android:textAllCaps="false" />
+    </ScrollView>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="72dp" android:orientation="horizontal"
+        android:gravity="center_vertical" android:background="@color/paper">
+        <TextView android:id="@+id/profile_tab_party" style="@style/ApnoTab" android:text="⌂\nParty" />
+        <TextView android:id="@+id/profile_tab_game" style="@style/ApnoTab" android:text="▣\nGame" />
+        <TextView android:id="@+id/profile_tab_discover" style="@style/ApnoTab" android:text="◇\nDiscover" />
+        <TextView android:id="@+id/profile_tab_messages" style="@style/ApnoTab" android:text="▢\nMessages" />
+        <TextView android:id="@+id/profile_tab_me" style="@style/ApnoTab" android:text="♙\nMe" android:textColor="@color/ink" />
     </LinearLayout>
-</ScrollView>
+</LinearLayout>
