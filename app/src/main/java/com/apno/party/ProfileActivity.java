@@ -22,8 +22,9 @@ public class ProfileActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(getColor(R.color.navy));
-        getWindow().setNavigationBarColor(getColor(R.color.navy));
+        getWindow().setStatusBarColor(getColor(R.color.paper));
+        getWindow().setNavigationBarColor(getColor(R.color.paper));
+        getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         setContentView(R.layout.activity_profile);
         data = getSharedPreferences("apno_preview", MODE_PRIVATE);
         nameView = findViewById(R.id.name);

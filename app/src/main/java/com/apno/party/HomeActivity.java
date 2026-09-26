@@ -35,8 +35,9 @@ public class HomeActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(getColor(R.color.navy));
-        getWindow().setNavigationBarColor(getColor(R.color.navy));
+        getWindow().setStatusBarColor(getColor(R.color.paper));
+        getWindow().setNavigationBarColor(getColor(R.color.paper));
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         setContentView(R.layout.activity_home);
         data = getSharedPreferences("apno_preview", MODE_PRIVATE);
         rooms = findViewById(R.id.rooms);
@@ -44,6 +45,7 @@ public class HomeActivity extends Activity {
         savedPostsView = findViewById(R.id.saved_posts);
         discoverRooms = findViewById(R.id.discover_rooms);
         setupNavigation();
+        showGames();
         showCategories();
         searchPosts = findViewById(R.id.search_posts);
         searchPosts.addTextChangedListener(new TextWatcher() {
@@ -80,7 +82,7 @@ public class HomeActivity extends Activity {
         int[] panels = { R.id.party_panel, R.id.game_panel, R.id.discover_panel, R.id.messages_panel };
         int[] tabs = { R.id.tab_party, R.id.tab_game, R.id.tab_discover, R.id.tab_messages, R.id.tab_me };
         for (int id : panels) findViewById(id).setVisibility(id == panelId ? View.VISIBLE : View.GONE);
-        for (int id : tabs) ((TextView) findViewById(id)).setTextColor(getColor(id == tabId ? R.color.yellow : R.color.muted));
+        for (int id : tabs) ((TextView) findViewById(id)).setTextColor(getColor(id == tabId ? R.color.ink : R.color.subtle));
         ((TextView) findViewById(R.id.section_title)).setText(title);
         ((ScrollView) findViewById(R.id.content_scroll)).scrollTo(0, 0);
     }
@@ -94,8 +96,8 @@ public class HomeActivity extends Activity {
             chip.setTextSize(16);
             chip.setGravity(android.view.Gravity.CENTER);
             chip.setPadding(28, 16, 28, 16);
-            chip.setTextColor(getColor(category.equals(selectedCategory) ? R.color.navy : R.color.white));
-            chip.setBackgroundColor(getColor(category.equals(selectedCategory) ? R.color.yellow : R.color.surface));
+            chip.setTextColor(getColor(R.color.ink));
+            chip.setBackgroundColor(getColor(category.equals(selectedCategory) ? R.color.yellow : R.color.line));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
             lp.rightMargin = 10;
             bar.addView(chip, lp);
@@ -105,6 +107,69 @@ public class HomeActivity extends Activity {
                 showRooms();
             });
         }
+    }
+
+    private void showGames() {
+        LinearLayout grid = findViewById(R.id.game_grid);
+        String[] names = { "Ludo Dice", "Sheep Fight", "Knife Hit", "Hexagon Fight", "Rummy", "Solitaire" };
+        String[] symbols = { "🎲", "🐑", "🎯", "⬡", "🃏", "♠" };
+        int[] shades = { 0xFFFFE8AE, 0xFFCAE9FA, 0xFFD8D5FB, 0xFFBCEFEB, 0xFFFFD3E4, 0xFFD5ECCA };
+        findViewById(R.id.game_hot).setOnClickListener(v -> {
+            findViewById(R.id.game_hot).setBackgroundColor(getColor(R.color.yellow));
+            findViewById(R.id.game_ludo).setBackgroundColor(getColor(R.color.line));
+        });
+        findViewById(R.id.game_ludo).setOnClickListener(v -> {
+            findViewById(R.id.game_ludo).setBackgroundColor(getColor(R.color.yellow));
+            findViewById(R.id.game_hot).setBackgroundColor(getColor(R.color.line));
+            rollDice();
+        });
+        for (int start = 0; start < names.length; start += 3) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+            rowParams.topMargin = dp(22);
+            grid.addView(row, rowParams);
+            for (int i = start; i < start + 3; i++) {
+                final int index = i;
+                LinearLayout tile = new LinearLayout(this);
+                tile.setOrientation(LinearLayout.VERTICAL);
+                LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -2, 1);
+                if (i % 3 != 0) tileParams.leftMargin = dp(10);
+                row.addView(tile, tileParams);
+                TextView art = new TextView(this);
+                art.setText(symbols[i]);
+                art.setTextSize(48);
+                art.setGravity(android.view.Gravity.CENTER);
+                art.setBackgroundColor(shades[i]);
+                tile.addView(art, new LinearLayout.LayoutParams(-1, dp(120)));
+                TextView label = new TextView(this);
+                label.setText(names[i]);
+                label.setTextColor(getColor(R.color.ink));
+                label.setTypeface(null, android.graphics.Typeface.BOLD);
+                label.setTextSize(15);
+                label.setMaxLines(1);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                tile.addView(label);
+                tile.setOnClickListener(v -> {
+                    if (index == 0) rollDice();
+                    else new AlertDialog.Builder(this).setTitle(names[index])
+                        .setMessage("This game is not available in the current preview.")
+                        .setPositiveButton("OK", null).show();
+                });
+            }
+        }
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private void rollDice() {
+        int number = new java.util.Random().nextInt(6) + 1;
+        new AlertDialog.Builder(this).setTitle("Ludo Dice")
+            .setMessage("You rolled " + number + " 🎲")
+            .setPositiveButton("Roll again", (dialog, which) -> rollDice())
+            .setNegativeButton("Close", null).show();
     }
 
     private JSONArray savedPosts() {
@@ -183,7 +248,7 @@ public class HomeActivity extends Activity {
         if (list.length() == 0) {
             TextView empty = new TextView(this);
             empty.setText("No posts yet. Write your first post above.");
-            empty.setTextColor(getColor(R.color.muted));
+            empty.setTextColor(getColor(R.color.subtle));
             empty.setPadding(12, 24, 12, 24);
             posts.addView(empty);
             showSavedEmpty();
@@ -199,7 +264,7 @@ public class HomeActivity extends Activity {
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(20, 20, 20, 20);
-            card.setBackgroundColor(getColor(R.color.surface));
+            card.setBackgroundColor(getColor(R.color.line));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
             params.topMargin = 12;
             posts.addView(card, params);
@@ -215,7 +280,7 @@ public class HomeActivity extends Activity {
             if (!video.isEmpty()) {
                 TextView play = new TextView(this);
                 play.setText("▶  Play video");
-                play.setTextColor(getColor(R.color.accent));
+                play.setTextColor(getColor(R.color.ink));
                 play.setTextSize(18);
                 play.setPadding(0, 24, 0, 24);
                 card.addView(play);
@@ -233,7 +298,7 @@ public class HomeActivity extends Activity {
             if (!body.isEmpty()) {
             TextView row = new TextView(this);
             row.setText(body);
-            row.setTextColor(Color.WHITE);
+            row.setTextColor(getColor(R.color.ink));
             row.setTextSize(17);
             row.setPadding(0, 12, 0, 8);
             card.addView(row);
@@ -241,7 +306,7 @@ public class HomeActivity extends Activity {
             TextView like = new TextView(this);
             boolean liked = post != null && post.optBoolean("liked", false);
             like.setText(liked ? "♥ Liked" : "♡ Like");
-            like.setTextColor(getColor(R.color.accent));
+            like.setTextColor(getColor(R.color.ink));
             like.setTextSize(16);
             like.setPadding(0, 16, 0, 8);
             card.addView(like);
@@ -250,21 +315,21 @@ public class HomeActivity extends Activity {
             TextView commentButton = new TextView(this);
             int count = comments == null ? 0 : comments.length();
             commentButton.setText("Comments (" + count + ")  ›");
-            commentButton.setTextColor(Color.WHITE);
+            commentButton.setTextColor(getColor(R.color.ink));
             commentButton.setTextSize(16);
             commentButton.setPadding(0, 12, 0, 12);
             card.addView(commentButton);
             commentButton.setOnClickListener(v -> showComments(position));
             TextView bookmark = new TextView(this);
             bookmark.setText(post != null && post.optBoolean("saved") ? "★ Saved" : "☆ Save");
-            bookmark.setTextColor(getColor(R.color.accent));
+            bookmark.setTextColor(getColor(R.color.ink));
             bookmark.setTextSize(16);
             bookmark.setPadding(0, 12, 0, 12);
             card.addView(bookmark);
             bookmark.setOnClickListener(v -> toggleSaved(position));
             TextView share = new TextView(this);
             share.setText("↗ Share");
-            share.setTextColor(Color.WHITE);
+            share.setTextColor(getColor(R.color.ink));
             share.setTextSize(16);
             share.setPadding(0, 12, 0, 12);
             card.addView(share);
@@ -273,10 +338,10 @@ public class HomeActivity extends Activity {
                 TextView saved = new TextView(this);
                 saved.setText("★  " + (body.isEmpty() ? (!video.isEmpty() ? "Video post" : "Photo post") : body));
                 saved.setMaxLines(2);
-                saved.setTextColor(Color.WHITE);
+                saved.setTextColor(getColor(R.color.ink));
                 saved.setTextSize(16);
                 saved.setPadding(20, 18, 20, 18);
-                saved.setBackgroundColor(getColor(R.color.surface));
+                saved.setBackgroundColor(getColor(R.color.line));
                 LinearLayout.LayoutParams savedParams = new LinearLayout.LayoutParams(-1, -2);
                 savedParams.topMargin = 10;
                 savedPostsView.addView(saved, savedParams);
@@ -295,7 +360,7 @@ public class HomeActivity extends Activity {
         if (posts.getChildCount() == 0) {
             TextView empty = new TextView(this);
             empty.setText("No posts match your search.");
-            empty.setTextColor(getColor(R.color.muted));
+            empty.setTextColor(getColor(R.color.subtle));
             empty.setPadding(12, 24, 12, 24);
             posts.addView(empty);
         }
@@ -305,7 +370,7 @@ public class HomeActivity extends Activity {
     private void showSavedEmpty() {
         TextView empty = new TextView(this);
         empty.setText("Save a post to see it here.");
-        empty.setTextColor(getColor(R.color.muted));
+        empty.setTextColor(getColor(R.color.subtle));
         empty.setPadding(12, 24, 12, 24);
         savedPostsView.addView(empty);
     }
@@ -527,7 +592,7 @@ public class HomeActivity extends Activity {
         if (list.length() == 0) {
             TextView empty = new TextView(this);
             empty.setText("No rooms yet. Create your first room above.");
-            empty.setTextColor(getColor(R.color.muted));
+            empty.setTextColor(getColor(R.color.subtle));
             empty.setTextSize(16);
             empty.setPadding(12, 24, 12, 24);
             rooms.addView(empty);
@@ -541,10 +606,10 @@ public class HomeActivity extends Activity {
             if (!selectedCategory.equals("Hot") && !category.equals(selectedCategory)) continue;
             TextView row = new TextView(this);
             row.setText("🎙  " + title + "  ·  " + category + "    ›");
-            row.setTextColor(Color.WHITE);
+            row.setTextColor(getColor(R.color.ink));
             row.setTextSize(18);
             row.setPadding(20, 28, 20, 28);
-            row.setBackgroundColor(getColor(R.color.surface));
+            row.setBackgroundColor(getColor(R.color.line));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
             params.bottomMargin = 12;
             rooms.addView(row, params);
@@ -559,7 +624,7 @@ public class HomeActivity extends Activity {
         if (rooms.getChildCount() == 0) {
             TextView empty = new TextView(this);
             empty.setText("No " + selectedCategory + " rooms yet. Create one above.");
-            empty.setTextColor(getColor(R.color.muted));
+            empty.setTextColor(getColor(R.color.subtle));
             empty.setPadding(12, 24, 12, 24);
             rooms.addView(empty);
         }
@@ -572,7 +637,7 @@ public class HomeActivity extends Activity {
         if (list.length() == 0) {
             TextView empty = new TextView(this);
             empty.setText("No local rooms to discover yet. Create one in Party.");
-            empty.setTextColor(getColor(R.color.muted));
+            empty.setTextColor(getColor(R.color.subtle));
             empty.setPadding(12, 28, 12, 28);
             discoverRooms.addView(empty);
             return;
@@ -583,10 +648,10 @@ public class HomeActivity extends Activity {
             String category = room == null ? "Hot" : room.optString("category", "Hot");
             TextView row = new TextView(this);
             row.setText(category + "  ·  " + title + "  ›");
-            row.setTextColor(getColor(R.color.white));
+            row.setTextColor(getColor(R.color.ink));
             row.setTextSize(18);
             row.setPadding(20, 24, 20, 24);
-            row.setBackgroundColor(getColor(R.color.surface));
+            row.setBackgroundColor(getColor(R.color.line));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
             lp.topMargin = 12;
             discoverRooms.addView(row, lp);
