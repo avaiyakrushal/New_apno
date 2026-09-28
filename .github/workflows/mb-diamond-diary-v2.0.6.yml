@@ -1,7 +1,8 @@
 name: Build MB Diamond Diary v2.0.6 APK
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [mb-diamond-diary-v2.0.6-build]
 
 jobs:
   build:
