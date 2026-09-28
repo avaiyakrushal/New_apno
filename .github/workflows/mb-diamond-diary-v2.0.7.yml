@@ -26,7 +26,18 @@ jobs:
           gradle-version: '8.9'
       - name: Build debug APK
         working-directory: mbd-build
-        run: gradle :app:assembleDebug --stacktrace
+        shell: bash
+        run: |
+          set +e
+          gradle :app:assembleDebug --stacktrace 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "## MB Diamond Diary build error" >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            grep -E -B 4 -A 16 "FAILURE:|What went wrong:|Execution failed for task|error:|Caused by:" build.log | tail -n 120 >> "$GITHUB_STEP_SUMMARY" || tail -n 120 build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit "$code"
+          fi
       - name: Upload MB Diamond Diary APK
         uses: actions/upload-artifact@v4
         with:
