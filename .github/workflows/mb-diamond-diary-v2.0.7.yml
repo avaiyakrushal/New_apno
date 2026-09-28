@@ -12,18 +12,32 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
       - name: Extract MB Diamond Diary source
         run: |
           rm -rf mbd-build
           mkdir mbd-build
           unzip -q mb-diamond-diary-v2.0.7-source.zip -d mbd-build
+
+      - name: Enable AndroidX
+        run: |
+          touch mbd-build/gradle.properties
+          grep -q '^android.useAndroidX=' mbd-build/gradle.properties \
+            && sed -i 's/^android.useAndroidX=.*/android.useAndroidX=true/' mbd-build/gradle.properties \
+            || echo 'android.useAndroidX=true' >> mbd-build/gradle.properties
+          grep -q '^android.enableJetifier=' mbd-build/gradle.properties \
+            && sed -i 's/^android.enableJetifier=.*/android.enableJetifier=true/' mbd-build/gradle.properties \
+            || echo 'android.enableJetifier=true' >> mbd-build/gradle.properties
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Build debug APK
         working-directory: mbd-build
         shell: bash
@@ -38,6 +52,7 @@ jobs:
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             exit "$code"
           fi
+
       - name: Upload MB Diamond Diary APK
         uses: actions/upload-artifact@v4
         with:
