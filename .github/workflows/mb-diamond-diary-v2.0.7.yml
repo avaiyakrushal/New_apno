@@ -29,10 +29,23 @@ jobs:
             && sed -i 's/^android.enableJetifier=.*/android.enableJetifier=true/' mbd-build/gradle.properties \
             || echo 'android.enableJetifier=true' >> mbd-build/gradle.properties
 
+      - name: Install stable debug signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          base64 -d .github/mbd-debug.keystore.b64 > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Show APK signing fingerprints
+        run: |
+          echo "## MB Diamond Diary signing fingerprints" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | grep -E 'SHA1:|SHA256:' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
