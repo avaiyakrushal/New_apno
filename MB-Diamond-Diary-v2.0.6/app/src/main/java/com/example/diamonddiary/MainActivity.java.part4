@@ -1,0 +1,292 @@
+                });
+            })
+            .addOnFailureListener(e -> {
+                workerJoinButton.setEnabled(true);
+                workerJoinStatus.setText("રિક્વેસ્ટ મોકલી શકાયી નથી. ફરી પ્રયાસ કરો.");
+            });
+    }
+
+    private void showWorkerPending(String companyName) {
+        hideAll();
+        pending.setVisibility(View.VISIBLE);
+        String shownName = companyName == null || companyName.length() == 0 ? "તમારી કંપની" : companyName;
+        pendingInfo.setText(shownName + "\n\nરિક્વેસ્ટ મોકલાઈ ગઈ છે.\nશેઠ મંજૂર કરશે પછી એપ ખુલી જશે.");
+    }
+
+    private void grantRole(FirebaseUser user, String role, String mode) {
+        currentRole = role;
+        currentMode = mode;
+        hideAll();
+        page.setVisibility(View.VISIBLE);
+        if (!user.getUid().equals(loadedUid)) {
+            loadedUid = user.getUid();
+            page.loadUrl("file:///android_asset/app.html?uid=" + Uri.encode(loadedUid));
+        } else {
+            updateAccountLabel();
+            updateRoleInPage();
+        }
+    }
+
+    private void updateRoleInPage() {
+        if (currentRole == null) return;
+        String js = "window.mbRole && window.mbRole(" +
+            org.json.JSONObject.quote(currentRole) + "," + org.json.JSONObject.quote(currentMode) + ");";
+        if ("boss".equals(currentRole)) {
+            js += "var p=document.getElementById('bossWorkerPanel');if(p)p.style.display='none';";
+        }
+        page.evaluateJavascript(js, null);
+    }
+
+    private void updateAccountLabel() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null || currentRole == null) return;
+        String name = user.getDisplayName() == null ? user.getEmail() : user.getDisplayName();
+        page.evaluateJavascript("window.mbAccount && window.mbAccount(" +
+            org.json.JSONObject.quote(name == null ? "Google એકાઉન્ટ" : name) + ")", null);
+    }
+
+    private void signIn() {
+        if (signingIn) return;
+        signingIn = true;
+        loginButton.setEnabled(false);
+        loginStatus.setText("Google લોગીન ખૂલી રહ્યું છે…");
+        GetGoogleIdOption option = new GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(getString(R.string.default_web_client_id))
+            .build();
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+            .addCredentialOption(option).build();
+        credentials.getCredentialAsync(this, request, new CancellationSignal(),
+            Executors.newSingleThreadExecutor(), new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                @Override public void onResult(GetCredentialResponse response) {
+                    Credential credential = response.getCredential();
+                    if (!(credential instanceof CustomCredential) ||
+                        !GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())) {
+                        runOnUiThread(() -> signInError("Google એકાઉન્ટ પસંદ થઈ શક્યું નથી"));
+                        return;
+                    }
+                    try {
+                        String token = GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
+                        runOnUiThread(() -> auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null))
+                            .addOnCompleteListener(MainActivity.this, task -> {
+                                signingIn = false;
+                                loginButton.setEnabled(true);
+                                if (task.isSuccessful()) showAuthState();
+                                else signInError("લોગીન નિષ્ફળ ગયું. ફરી પ્રયાસ કરો.");
+                            }));
+                    } catch (Exception e) {
+                        runOnUiThread(() -> signInError("Google લોગીન પૂર્ણ થઈ શક્યું નથી"));
+                    }
+                }
+                @Override public void onError(GetCredentialException e) {
+                    runOnUiThread(() -> signInError("લોગીન રદ થયું અથવા Google એકાઉન્ટ મળ્યું નથી"));
+                }
+            });
+    }
+
+    private void signInError(String message) {
+        signingIn = false;
+        loginButton.setEnabled(true);
+        loginStatus.setText(message);
+    }
+
+    private void signOut() {
+        clearWorkerListener();
+        clearBossWorkersListener();
+        bossAppOpened = false;
+        currentCompanyName = null;
+        currentCompanyCode = null;
+        currentRole = null;
+        currentMode = null;
+        auth.signOut();
+        showAuthState();
+    }
+
+    private void clearWorkerListener() {
+        if (workerListener != null) {
+            workerListener.remove();
+            workerListener = null;
+        }
+        watchingUid = null;
+    }
+
+    private void clearBossWorkersListener() {
+        if (bossWorkersListener != null) {
+            bossWorkersListener.remove();
+            bossWorkersListener = null;
+        }
+    }
+
+    private void hideAll() {
+        page.setVisibility(View.GONE);
+        login.setVisibility(View.GONE);
+        if (roleChoice != null) roleChoice.setVisibility(View.GONE);
+        Object workerProfileTag = workerProfile == null ? null : workerProfile.getTag();
+        if (workerProfileTag instanceof ScrollView) ((ScrollView) workerProfileTag).setVisibility(View.GONE);
+        setBossVisible(false);
+        workerJoin.setVisibility(View.GONE);
+        pending.setVisibility(View.GONE);
+    }
+
+    private void setBossVisible(boolean visible) {
+        Object tag = bossScreen.getTag();
+        if (tag instanceof ScrollView) ((ScrollView) tag).setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private LinearLayout baseScreen() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER);
+        layout.setPadding(dp(24), dp(30), dp(24), dp(30));
+        layout.setBackgroundColor(0xfff3f5f9);
+        return layout;
+    }
+
+    private TextView titleText(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(25);
+        view.setTextColor(0xff17243a);
+        view.setTypeface(Typeface.DEFAULT_BOLD);
+        view.setGravity(Gravity.CENTER);
+        return view;
+    }
+
+    private TextView sectionText(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(18);
+        view.setTextColor(0xff17243a);
+        view.setTypeface(Typeface.DEFAULT_BOLD);
+        return view;
+    }
+
+    private TextView bodyText(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextSize(15);
+        view.setTextColor(0xff536073);
+        return view;
+    }
+
+    private EditText input(String hint) {
+        EditText view = new EditText(this);
+        view.setHint(hint);
+        view.setSingleLine(true);
+        view.setTextColor(0xff17243a);
+        view.setHintTextColor(0xff8a95a5);
+        view.setPadding(dp(12), dp(12), dp(12), dp(12));
+        return view;
+    }
+
+    private Button primaryButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setTextColor(0xffffffff);
+        button.setTextSize(15);
+        button.setAllCaps(false);
+        button.setBackgroundTintList(ColorStateList.valueOf(0xffa80d32));
+        LinearLayout.LayoutParams p = fullWrap();
+        p.topMargin = dp(12);
+        button.setLayoutParams(p);
+        return button;
+    }
+
+    private Button secondaryButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setTextColor(0xff9b1e3b);
+        button.setTextSize(15);
+        button.setAllCaps(false);
+        button.setBackgroundTintList(ColorStateList.valueOf(0xffffffff));
+        LinearLayout.LayoutParams p = fullWrap();
+        p.topMargin = dp(10);
+        button.setLayoutParams(p);
+        return button;
+    }
+
+    private LinearLayout.LayoutParams fullWrap() {
+        return new LinearLayout.LayoutParams(-1, -2);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request == FILE_CHOOSE && chooserCallback != null) {
+            chooserCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result, data));
+            chooserCallback = null;
+        }
+    }
+
+    @Override public void onBackPressed() {
+        if (page.getVisibility() == View.VISIBLE && page.canGoBack()) page.goBack();
+        else super.onBackPressed();
+    }
+
+    private class Bridge {
+        @JavascriptInterface public void signOut() {
+            runOnUiThread(() -> MainActivity.this.signOut());
+        }
+
+        @JavascriptInterface public void approveWorker(String uid, String name, String mode) {
+            runOnUiThread(() -> {
+                FirebaseUser user = auth.getCurrentUser();
+                if (user == null || !"boss".equals(currentRole)
+                    || !uid.matches("[A-Za-z0-9]{20,128}")
+                    || !("diamond".equals(mode) || "hour".equals(mode))) return;
+                Map<String,Object> worker = new HashMap<>();
+                worker.put("mode", mode);
+                worker.put("active", true);
+                worker.put("name", name.length() > 80 ? name.substring(0, 80) : name);
+                database.collection("workers").document(uid).set(worker)
+                    .addOnSuccessListener(v -> page.evaluateJavascript("alert('કારીગર મંજૂર થયો')", null))
+                    .addOnFailureListener(e -> page.evaluateJavascript("alert('મંજૂરી સેવ થઈ નથી')", null));
+            });
+        }
+
+        @JavascriptInterface public void syncWorkerTotalDiamonds(int total) {
+            runOnUiThread(() -> {
+                FirebaseUser user = auth.getCurrentUser();
+                if (user == null || !"worker".equals(currentRole) || total < 0) return;
+                Map<String,Object> update = new HashMap<>();
+                update.put("totalDiamonds", total);
+                database.collection("workers").document(user.getUid()).update(update);
+            });
+        }
+
+        @JavascriptInterface public void printPdf(String html) {
+            runOnUiThread(() -> {
+                if (printing != null) {
+                    printing.destroy();
+                    printing = null;
+                }
+                printing = new WebView(MainActivity.this);
+                printing.getSettings().setDefaultTextEncodingName("UTF-8");
+                printing.setWebViewClient(new WebViewClient() {
+                    @Override public void onPageFinished(WebView view, String url) {
+                        PrintManager manager = (PrintManager) getSystemService(PRINT_SERVICE);
+                        manager.print("MB-Diamond-Diary-Report",
+                            view.createPrintDocumentAdapter("MB-Diamond-Diary-Report"),
+                            new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
+                    }
+                });
+                printing.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+            });
+        }
+    }
+
+    @Override protected void onDestroy() {
+        clearWorkerListener();
+        clearBossWorkersListener();
+        if (printing != null) printing.destroy();
+        if (page != null) page.destroy();
+        super.onDestroy();
+    }
+}

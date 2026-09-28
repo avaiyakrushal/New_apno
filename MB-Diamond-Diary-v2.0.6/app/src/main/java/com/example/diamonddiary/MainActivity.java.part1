@@ -1,0 +1,300 @@
+package com.example.diamonddiary;
+
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.CancellationSignal;
+import android.print.PrintAttributes;
+import android.print.PrintManager;
+import android.graphics.Typeface;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowInsets;
+import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialException;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Executors;
+
+public class MainActivity extends Activity {
+    private WebView page;
+    private WebView printing;
+    private ValueCallback<Uri[]> chooserCallback;
+    private static final int FILE_CHOOSE = 93;
+
+    private FirebaseAuth auth;
+    private FirebaseFirestore database;
+    private CredentialManager credentials;
+
+    private LinearLayout login;
+    private Button loginButton;
+    private TextView loginStatus;
+
+    private LinearLayout roleChoice;
+    private LinearLayout workerProfile;
+    private EditText profileFirstName;
+    private EditText profileLastName;
+    private EditText profilePhone;
+    private EditText profileBirthday;
+    private Button workerProfileSave;
+
+    private LinearLayout bossScreen;
+    private LinearLayout bossCreateBox;
+    private LinearLayout bossInfoBox;
+    private EditText bossCompanyInput;
+    private TextView bossCompanyName;
+    private TextView bossCompanyCode;
+    private TextView bossWorkersTitle;
+    private LinearLayout bossWorkers;
+    private Button createCompanyButton;
+
+    private LinearLayout workerJoin;
+    private EditText workerCodeInput;
+    private TextView workerJoinStatus;
+    private Button workerJoinButton;
+
+    private LinearLayout pending;
+    private TextView pendingInfo;
+
+    private LinearLayout adminScreen;
+    private TextView adminStats;
+    private LinearLayout adminCompanies;
+
+    private boolean signingIn;
+    private String loadedUid;
+    private String currentRole;
+    private String currentMode;
+    private String currentCompanyName;
+    private String currentCompanyCode;
+    private boolean bossAppOpened;
+
+    private ListenerRegistration workerListener;
+    private ListenerRegistration bossWorkersListener;
+    private String watchingUid;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        auth = FirebaseAuth.getInstance();
+        database = FirebaseFirestore.getInstance();
+        credentials = CredentialManager.create(this);
+
+        getWindow().setStatusBarColor(0xff17243a);
+        getWindow().setNavigationBarColor(0xffffffff);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+
+        FrameLayout root = new FrameLayout(this);
+        if (Build.VERSION.SDK_INT >= 35) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return insets;
+            });
+        }
+
+        page = new WebView(this);
+        page.getSettings().setJavaScriptEnabled(true);
+        page.getSettings().setDomStorageEnabled(true);
+        page.getSettings().setAllowFileAccess(true);
+        page.addJavascriptInterface(new Bridge(), "Android");
+        page.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                updateAccountLabel();
+                updateRoleInPage();
+            }
+        });
+        page.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                if (chooserCallback != null) chooserCallback.onReceiveValue(null);
+                chooserCallback = callback;
+                try {
+                    startActivityForResult(params.createIntent(), FILE_CHOOSE);
+                    return true;
+                } catch (Exception e) {
+                    chooserCallback = null;
+                    return false;
+                }
+            }
+        });
+        root.addView(page, new FrameLayout.LayoutParams(-1, -1));
+
+        createLoginScreen(root);
+        createRoleChoiceScreen(root);
+        createWorkerProfileScreen(root);
+        createBossScreen(root);
+        createWorkerJoinScreen(root);
+        createPendingScreen(root);
+        createAdminScreen(root);
+
+        setContentView(root);
+        showAuthState();
+    }
+
+    private void createLoginScreen(FrameLayout root) {
+        login = baseScreen();
+        TextView title = titleText("◆  MB ડાયમંડ ડાયરી");
+        login.addView(title, fullWrap());
+
+        TextView subtitle = bodyText("તમારા Google એકાઉન્ટથી લોગીન કરો");
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setPadding(0, dp(18), 0, dp(18));
+        login.addView(subtitle, fullWrap());
+
+        loginButton = primaryButton("Google સાથે લોગીન કરો");
+        loginButton.setOnClickListener(v -> signIn());
+        login.addView(loginButton, fullWrap());
+
+        loginStatus = bodyText("");
+        loginStatus.setGravity(Gravity.CENTER);
+        loginStatus.setPadding(0, dp(12), 0, 0);
+        login.addView(loginStatus, fullWrap());
+        root.addView(login, new FrameLayout.LayoutParams(-1, -1));
+    }
+
+    private void createRoleChoiceScreen(FrameLayout root) {
+        roleChoice = baseScreen();
+        roleChoice.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView title = sectionText("તમે કોણ છો?");
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(18), 0, dp(10));
+        roleChoice.addView(title, fullWrap());
+        TextView note = bodyText("એકવાર પસંદ કર્યા પછી આ ભૂમિકા તમારા Google એકાઉન્ટ સાથે સેવ થશે.");
+        note.setGravity(Gravity.CENTER);
+        note.setPadding(0, 0, 0, dp(18));
+        roleChoice.addView(note, fullWrap());
+
+        Button worker = primaryButton("હું કારીગર છું");
+        worker.setOnClickListener(v -> saveRole("worker"));
+        roleChoice.addView(worker, fullWrap());
+        Button boss = secondaryButton("હું શેઠ (માલિક) છું");
+        boss.setOnClickListener(v -> saveRole("boss"));
+        roleChoice.addView(boss, fullWrap());
+
+        Button logout = secondaryButton("લોગ આઉટ");
+        logout.setOnClickListener(v -> signOut());
+        roleChoice.addView(logout, fullWrap());
+        root.addView(roleChoice, new FrameLayout.LayoutParams(-1, -1));
+        roleChoice.setVisibility(View.GONE);
+    }
+
+    private void createWorkerProfileScreen(FrameLayout root) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        workerProfile = baseScreen();
+        workerProfile.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        scroll.addView(workerProfile, new ScrollView.LayoutParams(-1, -2));
+        workerProfile.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView title = sectionText("કારીગરની માહિતી");
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(14), 0, dp(6));
+        workerProfile.addView(title, fullWrap());
+        TextView note = bodyText("આ માહિતી તમારા શેઠના કારીગર લિસ્ટમાં દેખાશે.");
+        note.setGravity(Gravity.CENTER);
+        note.setPadding(0, 0, 0, dp(12));
+        workerProfile.addView(note, fullWrap());
+
+        profileFirstName = input("નામ");
+        profileLastName = input("સરનેમ");
+        profilePhone = input("મોબાઇલ નંબર");
+        profileBirthday = input("જન્મ તારીખ (YYYY-MM-DD)");
+        workerProfile.addView(profileFirstName, fullWrap());
+        workerProfile.addView(profileLastName, fullWrap());
+        workerProfile.addView(profilePhone, fullWrap());
+        workerProfile.addView(profileBirthday, fullWrap());
+        workerProfileSave = primaryButton("માહિતી સેવ કરો");
+        workerProfileSave.setOnClickListener(v -> saveWorkerProfile());
+        workerProfile.addView(workerProfileSave, fullWrap());
+        Button logout = secondaryButton("લોગ આઉટ");
+        logout.setOnClickListener(v -> signOut());
+        workerProfile.addView(logout, fullWrap());
+
+        root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+        workerProfile.setTag(scroll);
+        scroll.setVisibility(View.GONE);
+    }
+
+    private void createBossScreen(FrameLayout root) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        bossScreen = baseScreen();
+        bossScreen.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        scroll.addView(bossScreen, new ScrollView.LayoutParams(-1, -2));
+
+        bossScreen.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView role = bodyText("શેઠ લોગીન");
+        role.setGravity(Gravity.CENTER);
+        role.setPadding(0, dp(8), 0, dp(20));
+        bossScreen.addView(role, fullWrap());
+
+        bossCreateBox = new LinearLayout(this);
+        bossCreateBox.setOrientation(LinearLayout.VERTICAL);
+        bossCreateBox.setPadding(dp(16), dp(16), dp(16), dp(16));
+        TextView createTitle = sectionText("તમારી કંપનીનું નામ લખો");
+        bossCreateBox.addView(createTitle, fullWrap());
+        bossCompanyInput = input("જેમ કે MB Diamond");
+        bossCreateBox.addView(bossCompanyInput, fullWrap());
+        createCompanyButton = primaryButton("કંપની બનાવો");
+        createCompanyButton.setOnClickListener(v -> createCompany());
+        bossCreateBox.addView(createCompanyButton, fullWrap());
+        bossScreen.addView(bossCreateBox, fullWrap());
+
+        bossInfoBox = new LinearLayout(this);
+        bossInfoBox.setOrientation(LinearLayout.VERTICAL);
+        bossInfoBox.setPadding(dp(16), dp(12), dp(16), dp(16));
+        bossCompanyName = sectionText("");
+        bossCompanyName.setGravity(Gravity.CENTER);
+        bossInfoBox.addView(bossCompanyName, fullWrap());
+        TextView codeLabel = bodyText("કંપની કોડ");
+        codeLabel.setGravity(Gravity.CENTER);
+        codeLabel.setPadding(0, dp(10), 0, dp(4));
+        bossInfoBox.addView(codeLabel, fullWrap());
+        bossCompanyCode = titleText("");
+        bossCompanyCode.setTextSize(30);
+        bossInfoBox.addView(bossCompanyCode, fullWrap());
+
+        Button share = primaryButton("કોડ શેર કરો");
+        share.setOnClickListener(v -> shareCompany());
+        bossInfoBox.addView(share, fullWrap());
+
+        Button open = secondaryButton("એપ ખોલો");
+        open.setOnClickListener(v -> {
+            FirebaseUser user = auth.getCurrentUser();
+            if (user == null) return;
+            bossAppOpened = true;
+            grantRole(user, "boss", "both");
+        });

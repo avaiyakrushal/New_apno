@@ -1,0 +1,300 @@
+        if (user == null) return;
+        String first = profileFirstName.getText().toString().trim();
+        String last = profileLastName.getText().toString().trim();
+        String phone = profilePhone.getText().toString().replaceAll("[^0-9]", "");
+        String birthday = profileBirthday.getText().toString().trim();
+        if (first.length() < 2) { profileFirstName.setError("નામ લખો"); return; }
+        if (phone.length() != 10) { profilePhone.setError("10 અંકનો મોબાઇલ નંબર લખો"); return; }
+        if (!birthday.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}")) { profileBirthday.setError("જન્મ તારીખ YYYY-MM-DD માં લખો"); return; }
+        Map<String,Object> data = new HashMap<>();
+        data.put("role", "worker");
+        data.put("firstName", first);
+        data.put("lastName", last);
+        data.put("name", (first + " " + last).trim());
+        data.put("phone", phone);
+        data.put("birthday", birthday);
+        data.put("email", safe(user.getEmail()));
+        workerProfileSave.setEnabled(false);
+        database.collection("users").document(user.getUid()).set(data, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener(v -> { workerProfileSave.setEnabled(true); showWorkerState(user); })
+            .addOnFailureListener(e -> { workerProfileSave.setEnabled(true); profileFirstName.setError("માહિતી સેવ થઈ નથી"); });
+    }
+
+    private void showBossCompany(FirebaseUser user) {
+        currentRole = "boss";
+        hideAll();
+        setBossVisible(true);
+        bossCreateBox.setVisibility(View.GONE);
+        bossInfoBox.setVisibility(View.GONE);
+
+        database.collection("companies").document(user.getUid()).get()
+            .addOnSuccessListener(snapshot -> {
+                if (auth.getCurrentUser() == null || !user.getUid().equals(auth.getCurrentUser().getUid())) return;
+                if (snapshot.exists()) {
+                    currentCompanyName = safe(snapshot.getString("name"));
+                    currentCompanyCode = safe(snapshot.getString("code"));
+                    showBossCompanyInfo(user);
+                } else {
+                    bossCreateBox.setVisibility(View.VISIBLE);
+                    bossInfoBox.setVisibility(View.GONE);
+                }
+            })
+            .addOnFailureListener(e -> {
+                bossCreateBox.setVisibility(View.VISIBLE);
+                createCompanyButton.setEnabled(true);
+            });
+    }
+
+    private void showBossCompanyInfo(FirebaseUser user) {
+        bossCreateBox.setVisibility(View.GONE);
+        bossInfoBox.setVisibility(View.VISIBLE);
+        bossCompanyName.setText(currentCompanyName.length() == 0 ? "તમારી કંપની" : currentCompanyName);
+        bossCompanyCode.setText(currentCompanyCode);
+        watchPendingWorkers(user.getUid());
+    }
+
+    private void createCompany() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null || !"boss".equals(currentRole)) return;
+        String name = bossCompanyInput.getText().toString().trim();
+        if (name.length() < 2) {
+            bossCompanyInput.setError("કંપનીનું નામ લખો");
+            return;
+        }
+        if (name.length() > 80) name = name.substring(0, 80);
+        createCompanyButton.setEnabled(false);
+        createCompanyWithFreshCode(user, name, 0);
+    }
+
+    private void createCompanyWithFreshCode(FirebaseUser user, String name, int attempt) {
+        if (attempt >= 6) {
+            createCompanyButton.setEnabled(true);
+            bossCompanyInput.setError("કોડ બનાવી શકાયો નથી. ફરી પ્રયાસ કરો.");
+            return;
+        }
+        String alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder codeBuilder = new StringBuilder(6);
+        for (int i = 0; i < 6; i++) codeBuilder.append(alphabet.charAt(RANDOM.nextInt(alphabet.length())));
+        String code = codeBuilder.toString();
+        DocumentReference codeRef = database.collection("companyCodes").document(code);
+        codeRef.get().addOnSuccessListener(codeSnapshot -> {
+            if (codeSnapshot.exists()) {
+                createCompanyWithFreshCode(user, name, attempt + 1);
+                return;
+            }
+            Map<String, Object> company = new HashMap<>();
+            company.put("name", name);
+            company.put("code", code);
+            company.put("bossUid", user.getUid());
+
+            Map<String, Object> codeData = new HashMap<>();
+            codeData.put("companyId", user.getUid());
+            codeData.put("companyName", name);
+
+            com.google.firebase.firestore.WriteBatch batch = database.batch();
+            batch.set(database.collection("companies").document(user.getUid()), company);
+            batch.set(codeRef, codeData);
+            batch.commit()
+                .addOnSuccessListener(v -> {
+                    createCompanyButton.setEnabled(true);
+                    currentCompanyName = name;
+                    currentCompanyCode = code;
+                    showBossCompanyInfo(user);
+                })
+                .addOnFailureListener(e -> {
+                    createCompanyButton.setEnabled(true);
+                    bossCompanyInput.setError("કંપની સેવ થઈ નથી. ફરી પ્રયાસ કરો.");
+                });
+        }).addOnFailureListener(e -> {
+            createCompanyButton.setEnabled(true);
+            bossCompanyInput.setError("કોડ ચેક થઈ શક્યો નથી. ફરી પ્રયાસ કરો.");
+        });
+    }
+
+    private void shareCompany() {
+        if (currentCompanyName == null || currentCompanyCode == null) return;
+        String text = "MB Diamond Diary\nકંપની: " + currentCompanyName + "\nકંપની કોડ: " + currentCompanyCode;
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_TEXT, text);
+        send.setPackage("com.whatsapp");
+        try {
+            startActivity(send);
+        } catch (ActivityNotFoundException e) {
+            Intent fallback = new Intent(Intent.ACTION_SEND);
+            fallback.setType("text/plain");
+            fallback.putExtra(Intent.EXTRA_TEXT, text);
+            startActivity(Intent.createChooser(fallback, "કંપની નામ + કોડ શેર કરો"));
+        }
+    }
+
+    private void watchPendingWorkers(String companyId) {
+        clearBossWorkersListener();
+        bossWorkersListener = database.collection("workers")
+            .whereEqualTo("companyId", companyId)
+            .addSnapshotListener((snapshots, error) -> {
+                if (error != null || snapshots == null) return;
+                bossWorkers.removeAllViews();
+                int total = snapshots.size();
+                for (DocumentSnapshot worker : snapshots.getDocuments()) addWorkerRow(worker);
+                bossWorkersTitle.setText(total == 0 ? "હજુ કોઈ કારીગર જોડાયેલો નથી" : "કારીગરો · " + total);
+            });
+    }
+
+    private void addWorkerRow(DocumentSnapshot worker) {
+        String workerId = worker.getId();
+        String nameText = safe(worker.getString("name"));
+        if (nameText.length() == 0) nameText = "કારીગર";
+        String phone = safe(worker.getString("phone"));
+        String birthday = safe(worker.getString("birthday"));
+        Long totalDiamondsValue = worker.getLong("totalDiamonds");
+        long totalDiamonds = totalDiamondsValue == null ? 0 : totalDiamondsValue;
+        boolean active = Boolean.TRUE.equals(worker.getBoolean("active"));
+        String mode = safe(worker.getString("mode"));
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+
+        TextView name = sectionText(nameText);
+        name.setGravity(Gravity.START);
+        card.addView(name, fullWrap());
+        card.addView(bodyText("મોબાઇલ: " + (phone.length() == 0 ? "—" : phone)), fullWrap());
+        card.addView(bodyText("જન્મ તારીખ: " + (birthday.length() == 0 ? "—" : birthday)), fullWrap());
+        card.addView(bodyText("કારીગરના લખેલા કુલ હીરા: " + totalDiamonds), fullWrap());
+        card.addView(bodyText(active ? "સ્થિતિ: ચાલુ · " + ("hour".equals(mode) ? "કલાક" : "હીરા") : "સ્થિતિ: મંજૂરી બાકી"), fullWrap());
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(0, dp(8), 0, dp(4));
+        if (!active) {
+            Button diamond = primaryButton("હીરા");
+            Button hour = secondaryButton("કલાક");
+            diamond.setOnClickListener(v -> assignWorkerMode(workerId, "diamond"));
+            hour.setOnClickListener(v -> assignWorkerMode(workerId, "hour"));
+            actions.addView(diamond, new LinearLayout.LayoutParams(0, -2, 1f));
+            actions.addView(hour, new LinearLayout.LayoutParams(0, -2, 1f));
+        } else {
+            Button inactive = secondaryButton("Inactive");
+            inactive.setOnClickListener(v -> setWorkerInactive(workerId));
+            actions.addView(inactive, new LinearLayout.LayoutParams(0, -2, 1f));
+        }
+        Button remove = secondaryButton("દૂર કરો");
+        remove.setOnClickListener(v -> removeWorker(workerId));
+        actions.addView(remove, new LinearLayout.LayoutParams(0, -2, 1f));
+        card.addView(actions, fullWrap());
+        bossWorkers.addView(card, fullWrap());
+    }
+
+    private void assignWorkerMode(String workerId, String mode) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("mode", mode);
+        update.put("active", true);
+        database.collection("workers").document(workerId).update(update);
+    }
+
+    private void setWorkerInactive(String workerId) {
+        Map<String,Object> update = new HashMap<>();
+        update.put("active", false);
+        database.collection("workers").document(workerId).update(update);
+    }
+
+    private void removeWorker(String workerId) {
+        database.collection("workers").document(workerId).delete();
+    }
+
+    private void showWorkerState(FirebaseUser user) {
+        if (user.getUid().equals(watchingUid) && workerListener != null) {
+            if ("worker".equals(currentRole) && ("diamond".equals(currentMode) || "hour".equals(currentMode)))
+                grantRole(user, "worker", currentMode);
+            return;
+        }
+        hideAll();
+        page.setVisibility(View.GONE);
+
+        clearWorkerListener();
+        watchingUid = user.getUid();
+        workerListener = database.collection("workers").document(watchingUid)
+            .addSnapshotListener((snapshot, error) -> {
+                FirebaseUser active = auth.getCurrentUser();
+                if (active == null || watchingUid == null || !watchingUid.equals(active.getUid())) return;
+                if (error != null) {
+                    showWorkerJoin();
+                    workerJoinStatus.setText("કોડ તપાસવામાં ભૂલ. ફરી પ્રયાસ કરો.");
+                    return;
+                }
+                if (snapshot == null || !snapshot.exists()) {
+                    showWorkerJoin();
+                    return;
+                }
+                currentCompanyName = safe(snapshot.getString("companyName"));
+                String mode = snapshot.getString("mode");
+                if (Boolean.TRUE.equals(snapshot.getBoolean("active")) && ("diamond".equals(mode) || "hour".equals(mode))) {
+                    grantRole(active, "worker", mode);
+                } else {
+                    showWorkerPending(currentCompanyName);
+                }
+            });
+    }
+
+    private void showWorkerJoin() {
+        hideAll();
+        workerJoin.setVisibility(View.VISIBLE);
+        workerJoinButton.setEnabled(true);
+        if (workerJoinStatus != null) workerJoinStatus.setText("");
+    }
+
+    private void joinCompany() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) return;
+        String code = workerCodeInput.getText().toString().trim().toUpperCase(java.util.Locale.US);
+        if (!code.matches("[A-Z0-9]{6}")) {
+            workerCodeInput.setError("6 અક્ષરનો શેઠનો કોડ લખો");
+            return;
+        }
+        workerJoinButton.setEnabled(false);
+        workerJoinStatus.setText("રિક્વેસ્ટ મોકલાઈ રહી છે…");
+        database.collection("companyCodes").document(code).get()
+            .addOnSuccessListener(snapshot -> {
+                if (!snapshot.exists()) {
+                    workerJoinButton.setEnabled(true);
+                    workerJoinStatus.setText("આ શેઠનો કોડ મળ્યો નથી");
+                    return;
+                }
+                String companyId = safe(snapshot.getString("companyId"));
+                String companyName = safe(snapshot.getString("companyName"));
+                if (companyId.length() == 0 || companyName.length() == 0) {
+                    workerJoinButton.setEnabled(true);
+                    workerJoinStatus.setText("આ શેઠનો કોડ માન્ય નથી");
+                    return;
+                }
+                database.collection("users").document(user.getUid()).get().addOnSuccessListener(profile -> {
+                    String first = safe(profile.getString("firstName"));
+                    String last = safe(profile.getString("lastName"));
+                    String displayName = (first + " " + last).trim();
+                    if (displayName.length() == 0) displayName = safe(user.getDisplayName());
+                    if (displayName.length() == 0) displayName = "કારીગર";
+                    Map<String, Object> worker = new HashMap<>();
+                    worker.put("companyId", companyId);
+                    worker.put("companyName", companyName);
+                    worker.put("companyCode", code);
+                    worker.put("name", displayName);
+                    worker.put("firstName", first);
+                    worker.put("lastName", last);
+                    worker.put("phone", safe(profile.getString("phone")));
+                    worker.put("birthday", safe(profile.getString("birthday")));
+                    worker.put("totalDiamonds", 0L);
+                    worker.put("active", false);
+                    database.collection("workers").document(user.getUid()).set(worker)
+                        .addOnSuccessListener(v -> {
+                            workerJoinButton.setEnabled(true);
+                            currentCompanyName = companyName;
+                            showWorkerPending(companyName);
+                        })
+                        .addOnFailureListener(e -> {
+                            workerJoinButton.setEnabled(true);
+                            workerJoinStatus.setText("રિક્વેસ્ટ મોકલી શકાયી નથી. ફરી પ્રયાસ કરો.");
+                        });
+                }).addOnFailureListener(e -> {
+                    workerJoinButton.setEnabled(true);
+                    workerJoinStatus.setText("કારીગરની માહિતી મળી નથી.");

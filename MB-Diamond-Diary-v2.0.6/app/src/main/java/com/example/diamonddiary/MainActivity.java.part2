@@ -1,0 +1,300 @@
+        bossInfoBox.addView(open, fullWrap());
+
+        bossWorkersTitle = sectionText("કામ પસંદ કરવાનું બાકી");
+        bossWorkersTitle.setPadding(0, dp(22), 0, dp(8));
+        bossInfoBox.addView(bossWorkersTitle, fullWrap());
+        bossWorkers = new LinearLayout(this);
+        bossWorkers.setOrientation(LinearLayout.VERTICAL);
+        bossInfoBox.addView(bossWorkers, fullWrap());
+
+        Button logout = secondaryButton("લોગ આઉટ");
+        logout.setOnClickListener(v -> signOut());
+        bossInfoBox.addView(logout, fullWrap());
+
+        bossScreen.addView(bossInfoBox, fullWrap());
+        bossInfoBox.setVisibility(View.GONE);
+        root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+        bossScreen.setTag(scroll);
+        scroll.setVisibility(View.GONE);
+    }
+
+    private void createWorkerJoinScreen(FrameLayout root) {
+        workerJoin = baseScreen();
+        workerJoin.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView workerTitle = sectionText("કારીગર લોગીન");
+        workerTitle.setGravity(Gravity.CENTER);
+        workerTitle.setPadding(0, dp(12), 0, dp(6));
+        workerJoin.addView(workerTitle, fullWrap());
+        TextView hint = bodyText("તમારા શેઠ પાસેથી 6 અક્ષરનો કોડ લઈને અહીં નાખો.");
+        hint.setGravity(Gravity.CENTER);
+        hint.setPadding(0, 0, 0, dp(16));
+        workerJoin.addView(hint, fullWrap());
+
+        workerCodeInput = input("શેઠનો કોડ");
+        workerCodeInput.setGravity(Gravity.CENTER);
+        workerJoin.addView(workerCodeInput, fullWrap());
+        workerJoinButton = primaryButton("રિક્વેસ્ટ મોકલો");
+        workerJoinButton.setOnClickListener(v -> joinCompany());
+        workerJoin.addView(workerJoinButton, fullWrap());
+        workerJoinStatus = bodyText("");
+        workerJoinStatus.setGravity(Gravity.CENTER);
+        workerJoinStatus.setPadding(0, dp(12), 0, 0);
+        workerJoin.addView(workerJoinStatus, fullWrap());
+        Button logout = secondaryButton("લોગ આઉટ");
+        logout.setOnClickListener(v -> signOut());
+        workerJoin.addView(logout, fullWrap());
+        root.addView(workerJoin, new FrameLayout.LayoutParams(-1, -1));
+        workerJoin.setVisibility(View.GONE);
+    }
+
+    private void createPendingScreen(FrameLayout root) {
+        pending = baseScreen();
+        pending.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView waitingTitle = sectionText("કારીગર લોગીન");
+        waitingTitle.setGravity(Gravity.CENTER);
+        waitingTitle.setPadding(0, dp(12), 0, dp(8));
+        pending.addView(waitingTitle, fullWrap());
+        pendingInfo = bodyText("");
+        pendingInfo.setGravity(Gravity.CENTER);
+        pendingInfo.setPadding(0, dp(8), 0, dp(16));
+        pending.addView(pendingInfo, fullWrap());
+        Button retry = secondaryButton("ફરી તપાસો");
+        retry.setOnClickListener(v -> { clearWorkerListener(); showAuthState(); });
+        pending.addView(retry, fullWrap());
+        Button pendingSignOut = secondaryButton("લોગ આઉટ");
+        pendingSignOut.setOnClickListener(v -> signOut());
+        pending.addView(pendingSignOut, fullWrap());
+        root.addView(pending, new FrameLayout.LayoutParams(-1, -1));
+        pending.setVisibility(View.GONE);
+        setAdminVisible(false);
+    }
+
+
+    private void createAdminScreen(FrameLayout root) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        adminScreen = baseScreen();
+        adminScreen.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        scroll.addView(adminScreen, new ScrollView.LayoutParams(-1, -2));
+
+        adminScreen.addView(titleText("◆  MB ડાયમંડ ડાયરી"), fullWrap());
+        TextView title = sectionText("Admin Dashboard");
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(10), 0, dp(12));
+        adminScreen.addView(title, fullWrap());
+
+        adminStats = bodyText("ડેટા લોડ થઈ રહ્યો છે…");
+        adminStats.setTextSize(17);
+        adminStats.setPadding(dp(12), dp(12), dp(12), dp(12));
+        adminScreen.addView(adminStats, fullWrap());
+
+        TextView companyTitle = sectionText("કંપની પ્રમાણે યુઝર");
+        companyTitle.setPadding(0, dp(18), 0, dp(8));
+        adminScreen.addView(companyTitle, fullWrap());
+
+        adminCompanies = new LinearLayout(this);
+        adminCompanies.setOrientation(LinearLayout.VERTICAL);
+        adminScreen.addView(adminCompanies, fullWrap());
+
+        Button refresh = primaryButton("રીફ્રેશ કરો");
+        refresh.setOnClickListener(v -> loadAdminDashboard());
+        adminScreen.addView(refresh, fullWrap());
+
+        Button logout = secondaryButton("લોગ આઉટ");
+        logout.setOnClickListener(v -> signOut());
+        adminScreen.addView(logout, fullWrap());
+
+        adminScreen.setTag(scroll);
+        root.addView(scroll, new FrameLayout.LayoutParams(-1, -1));
+        scroll.setVisibility(View.GONE);
+    }
+
+    private void setAdminVisible(boolean visible) {
+        if (adminScreen == null) return;
+        Object tag = adminScreen.getTag();
+        if (tag instanceof ScrollView) ((ScrollView) tag).setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void showAdminDashboard() {
+        currentRole = "admin";
+        clearWorkerListener();
+        clearBossWorkersListener();
+        hideAll();
+        setAdminVisible(true);
+        loadAdminDashboard();
+    }
+
+    private void loadAdminDashboard() {
+        if (adminStats == null || adminCompanies == null) return;
+        adminStats.setText("ડેટા લોડ થઈ રહ્યો છે…");
+        adminCompanies.removeAllViews();
+
+        database.collection("users").get().addOnSuccessListener(usersSnap -> {
+            database.collection("companies").get().addOnSuccessListener(companiesSnap -> {
+                database.collection("workers").get().addOnSuccessListener(workersSnap -> {
+                    int totalUsers = usersSnap.size();
+                    int bosses = 0;
+                    int workers = 0;
+                    Set<String> workerUserIds = new HashSet<>();
+                    for (DocumentSnapshot userDoc : usersSnap.getDocuments()) {
+                        String role = safe(userDoc.getString("role"));
+                        if ("boss".equals(role)) bosses++;
+                        if ("worker".equals(role)) {
+                            workers++;
+                            workerUserIds.add(userDoc.getId());
+                        }
+                    }
+
+                    int active = 0;
+                    int pendingCount = 0;
+                    Set<String> linkedWorkerIds = new HashSet<>();
+                    Map<String, Integer> companyWorkerCount = new HashMap<>();
+                    for (DocumentSnapshot workerDoc : workersSnap.getDocuments()) {
+                        linkedWorkerIds.add(workerDoc.getId());
+                        if (Boolean.TRUE.equals(workerDoc.getBoolean("active"))) active++;
+                        else pendingCount++;
+                        String companyId = safe(workerDoc.getString("companyId"));
+                        if (companyId.length() > 0)
+                            companyWorkerCount.put(companyId, companyWorkerCount.getOrDefault(companyId, 0) + 1);
+                    }
+
+                    int withoutCompany = 0;
+                    for (String uid : workerUserIds) if (!linkedWorkerIds.contains(uid)) withoutCompany++;
+
+                    adminStats.setText(
+                        "કુલ યુઝર: " + totalUsers +
+                        "\nકુલ શેઠ: " + bosses +
+                        "\nકુલ કારીગર: " + workers +
+                        "\nકુલ કંપની: " + companiesSnap.size() +
+                        "\nActive કારીગર: " + active +
+                        "\nPending કારીગર: " + pendingCount +
+                        "\nકંપની વગરના કારીગર: " + withoutCompany
+                    );
+
+                    if (companiesSnap.isEmpty()) {
+                        adminCompanies.addView(bodyText("હજુ કોઈ કંપની નથી."), fullWrap());
+                    } else {
+                        for (DocumentSnapshot companyDoc : companiesSnap.getDocuments()) {
+                            String name = safe(companyDoc.getString("name"));
+                            String code = safe(companyDoc.getString("code"));
+                            int count = companyWorkerCount.getOrDefault(companyDoc.getId(), 0);
+                            TextView row = bodyText((name.length() == 0 ? "કંપની" : name) +
+                                (code.length() == 0 ? "" : "  •  " + code) +
+                                "\nકારીગર: " + count);
+                            row.setPadding(dp(14), dp(12), dp(14), dp(12));
+                            adminCompanies.addView(row, fullWrap());
+                        }
+                    }
+                }).addOnFailureListener(e -> adminStats.setText("Workers ડેટા લોડ થઈ શક્યો નથી."));
+            }).addOnFailureListener(e -> adminStats.setText("Companies ડેટા લોડ થઈ શક્યો નથી."));
+        }).addOnFailureListener(e -> adminStats.setText("Users ડેટા લોડ થઈ શક્યો નથી."));
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+        if (auth != null) showAuthState();
+    }
+
+    private void showAuthState() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            clearWorkerListener();
+            clearBossWorkersListener();
+            currentRole = null;
+            currentMode = null;
+            currentCompanyName = null;
+            currentCompanyCode = null;
+            bossAppOpened = false;
+            hideAll();
+            login.setVisibility(View.VISIBLE);
+            if (loadedUid != null) {
+                loadedUid = null;
+                page.loadUrl("about:blank");
+            }
+            return;
+        }
+        login.setVisibility(View.GONE);
+        routeSignedInUser(user);
+    }
+
+    private void routeSignedInUser(FirebaseUser user) {
+        hideAll();
+        database.collection("admins").document(user.getUid()).get()
+            .addOnSuccessListener(adminDoc -> {
+                if (adminDoc.exists() && Boolean.TRUE.equals(adminDoc.getBoolean("enabled"))) {
+                    showAdminDashboard();
+                    return;
+                }
+                routeRegularUser(user);
+            })
+            .addOnFailureListener(e -> routeRegularUser(user));
+    }
+
+    private void routeRegularUser(FirebaseUser user) {
+        database.collection("users").document(user.getUid()).get()
+            .addOnSuccessListener(snapshot -> {
+                FirebaseUser active = auth.getCurrentUser();
+                if (active == null || !user.getUid().equals(active.getUid())) return;
+                String role = safe(snapshot.getString("role"));
+                if ("boss".equals(role)) {
+                    currentRole = "boss";
+                    clearWorkerListener();
+                    showBossCompany(user);
+                } else if ("worker".equals(role)) {
+                    currentRole = "worker";
+                    clearBossWorkersListener();
+                    String first = safe(snapshot.getString("firstName"));
+                    String last = safe(snapshot.getString("lastName"));
+                    String phone = safe(snapshot.getString("phone"));
+                    String birthday = safe(snapshot.getString("birthday"));
+                    if (first.length() == 0 || phone.length() == 0 || birthday.length() == 0) {
+                        showWorkerProfile(user, snapshot);
+                    } else {
+                        showWorkerState(user);
+                    }
+                } else {
+                    showRoleChoice();
+                }
+            })
+            .addOnFailureListener(e -> showRoleChoice());
+    }
+
+    private void showRoleChoice() {
+        hideAll();
+        roleChoice.setVisibility(View.VISIBLE);
+    }
+
+    private void saveRole(String role) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null || !("boss".equals(role) || "worker".equals(role))) return;
+        Map<String,Object> data = new HashMap<>();
+        data.put("role", role);
+        data.put("email", safe(user.getEmail()));
+        data.put("googleName", safe(user.getDisplayName()));
+        database.collection("users").document(user.getUid()).set(data, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener(v -> routeSignedInUser(user));
+    }
+
+    private void showWorkerProfile(FirebaseUser user, DocumentSnapshot snapshot) {
+        hideAll();
+        Object tag = workerProfile.getTag();
+        if (tag instanceof ScrollView) ((ScrollView) tag).setVisibility(View.VISIBLE);
+        String first = safe(snapshot.getString("firstName"));
+        String last = safe(snapshot.getString("lastName"));
+        if (first.length() == 0) {
+            String google = safe(user.getDisplayName());
+            if (google.length() > 0) {
+                String[] parts = google.split("\\s+", 2);
+                first = parts[0];
+                if (parts.length > 1) last = parts[1];
+            }
+        }
+        profileFirstName.setText(first);
+        profileLastName.setText(last);
+        profilePhone.setText(safe(snapshot.getString("phone")));
+        profileBirthday.setText(safe(snapshot.getString("birthday")));
+        workerProfileSave.setEnabled(true);
+    }
+
+    private void saveWorkerProfile() {
+        FirebaseUser user = auth.getCurrentUser();
