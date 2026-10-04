@@ -1,0 +1,41 @@
+name: Build MB Diamond Diary Final APK
+
+on:
+  push:
+    branches:
+      - mb-diamond-diary-v3.1-build
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore source
+        run: |
+          cat mbparts/part-00 mbparts/part-01 mbparts/part-02 mbparts/part-03 mbparts/part-04 mbparts/part-05a mbparts/part-05b mbparts/part-05c > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir mbbuild
+          unzip -q source.zip -d mbbuild
+
+      - name: Build debug APK
+        run: gradle -p mbbuild :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp mbbuild/app/build/outputs/apk/debug/app-debug.apk MB-Diamond-Diary-v3.1.2-final.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.1.2-final
+          path: MB-Diamond-Diary-v3.1.2-final.apk
