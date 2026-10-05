@@ -59,6 +59,15 @@ jobs:
       - name: Apply v3.1.3 dashboard + decimal fixes
         run: python tools/mb_patch_v313.py mbbuild
 
+      - name: Diagnose Sheth dashboard data paths
+        run: |
+          echo '=== MainActivity worker/company paths ==='
+          grep -nE 'workers|companies|companyCode|monthlySummaries|monthDiamonds|monthHours|monthEarnings|monthWithdrawal|monthRemaining|owner|sheth' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java | head -n 400 || true
+          echo '=== Web dashboard fields ==='
+          grep -nE 'worker|owner|sheth|dashboard|monthDiamonds|monthHours|monthEarnings|monthWithdrawal|monthRemaining|monthlySummaries' mbbuild/app/src/main/assets/app.js | head -n 400 || true
+          echo '=== HTML dashboard fields ==='
+          grep -nE 'worker|owner|sheth|dashboard|monthDiamonds|monthHours|monthEarnings|monthWithdrawal|monthRemaining' mbbuild/app/src/main/assets/app.html | head -n 300 || true
+
       - name: Increase Gradle build memory
         run: |
           printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
