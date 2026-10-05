@@ -7,7 +7,6 @@ on:
       - mb-diamond-diary-v3.1-build
     paths:
       - '.github/workflows/mb-diamond-diagnose.yml'
-      - 'tools/mb_patch_v313.py'
 
 jobs:
   diagnose:
@@ -20,17 +19,22 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply current patch
-        run: python tools/mb_patch_v313.py mbbuild
-      - name: Print exact fix targets
+      - name: Apply all current patches
+        run: |
+          python tools/mb_patch_v313.py mbbuild
+          python tools/mb_patch_v316.py mbbuild
+          python tools/mb_patch_v317.py mbbuild
+      - name: Print dashboard data flow and rules
         run: |
           F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           J=mbbuild/app/src/main/assets/app.js
-          echo '=== ROLE CHOOSER 260-325 ==='
-          sed -n '260,325p' "$F"
-          echo '=== JOIN 1190-1260 ==='
-          sed -n '1190,1260p' "$F"
-          echo '=== PAGE FINISH 160-200 ==='
-          sed -n '160,205p' "$F"
-          echo '=== CLOUD MERGE JS 420-475 ==='
-          sed -n '420,475p' "$J"
+          echo '=== ENTRY JSON / CLOUD SAVE ==='
+          grep -nE 'entryFromJson|syncEntriesFromWeb|rebuildWorkerSummaryFromCloud|syncWorkerSummaryFromWeb|calculateMonthFromEntries|refreshBossDashboardFromEntries|watchPendingWorkers' "$F" || true
+          sed -n '1450,1665p' "$F"
+          echo '=== WORKER JOIN / SUMMARY ==='
+          sed -n '1120,1365p' "$F"
+          echo '=== JS ENTRY SHAPES ==='
+          grep -nE "type.?[:=].?['\"]?(diamond|hour|withdrawal)|pieces|amount|hours|syncWorkerSummary|mbSync|save.*entry|diamondEntries|hourEntries" "$J" | head -n 500 || true
+          echo '=== RULES / FIREBASE CONFIG FILES ==='
+          find mbbuild -maxdepth 4 -type f | grep -Ei 'firestore|firebase|rules|json' | sort || true
+          for R in $(find mbbuild -maxdepth 4 -type f | grep -Ei 'firestore.*rules|\.rules$'); do echo "=== $R ==="; cat "$R"; done
