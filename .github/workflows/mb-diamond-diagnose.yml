@@ -22,16 +22,13 @@ jobs:
           unzip -q source.zip -d mbbuild
       - name: Apply current patch
         run: python tools/mb_patch_v313.py mbbuild
-      - name: Print routing and cloud sync code
+      - name: Locate methods
         run: |
           F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          echo '=== ROLE / LOGIN 700-930 ==='
-          sed -n '700,930p' "$F"
-          echo '=== WORKER LISTENER 1120-1205 ==='
-          sed -n '1120,1205p' "$F"
-          echo '=== ENTRY SYNC 1570-1715 ==='
-          sed -n '1570,1715p' "$F"
-          echo '=== ROLE GRANT / SETUP 2065-2185 ==='
-          sed -n '2065,2185p' "$F"
-          echo '=== HTML/JS ROLE MARKERS ==='
-          grep -nE 'role|boss|worker|hour|diamond|office|ઓફિસ|શેઠ|હીરા|grantRole|selectRole' mbbuild/app/src/main/assets/app.js mbbuild/app/src/main/assets/app.html | head -n 500 || true
+          grep -nE 'grantRole|pushCloudEntries|watchCloud|cloudEntries|diaryEntries|pushEntries|loadEntries|setWorkerMode|roleChoice' "$F" || true
+          echo '=== 1250-1490 ==='
+          sed -n '1250,1490p' "$F"
+          echo '=== 1710-2005 ==='
+          sed -n '1710,2005p' "$F"
+          echo '=== UI setup role-choice references ==='
+          grep -nE 'roleChoice|bossChoice|workerChoice|saveRole\(' "$F" || true
