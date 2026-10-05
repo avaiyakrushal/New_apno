@@ -31,8 +31,12 @@ jobs:
       - name: Apply v3.1.3 dashboard + decimal fixes
         run: python tools/mb_patch_v313.py mbbuild
 
+      - name: Increase Gradle build memory
+        run: |
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
+
       - name: Build debug APK
-        run: gradle -p mbbuild :app:assembleDebug --stacktrace
+        run: gradle -p mbbuild :app:assembleDebug --stacktrace --no-daemon --max-workers=1
 
       - name: Rename APK
         run: cp mbbuild/app/build/outputs/apk/debug/app-debug.apk MB-Diamond-Diary-v3.1.3-final.apk
