@@ -34,7 +34,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.2
+      - name: Apply patches through final v3.2.2
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -43,13 +43,21 @@ jobs:
           python tools/mb_patch_v319.py mbbuild
           python tools/mb_patch_v320.py mbbuild
           python tools/mb_patch_v322.py mbbuild
-      - name: Validate source
+          python tools/mb_patch_v323.py mbbuild
+      - name: Validate all six finalized fixes
         run: |
           grep -q "versionName '3.2.2'" mbbuild/app/build.gradle
+          grep -q 'કંપનીમાં જોડાઓ' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'worker_joined' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'હીરા કારીગર' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'ઓફિસ / કલાક' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'હીરા ડિપાર્ટમેન્ટ' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'કલાક ડિપાર્ટમેન્ટ' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'maniyajitesh56@gmail.com' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'કુલ Companies:' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'મોબાઇલ:' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'જન્મ તારીખ:' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'કારીગર દૂર કરો' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'id="hourRateInput" type="text" inputmode="decimal"' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'hourRateDot' mbbuild/app/src/main/assets/app.html
       - name: Increase Gradle build memory
         run: |
           printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
@@ -58,11 +66,11 @@ jobs:
       - name: Re-sign and verify Firebase certificate
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.2-session-fixed.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
-          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.2-session-fixed.apk | tee apk-signing.txt
+          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.2-final-six-fixes.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.2-final-six-fixes.apk | tee apk-signing.txt
           grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' apk-signing.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.2-session-fixed
-          path: MB-Diamond-Diary-v3.2.2-session-fixed.apk
+          name: MB-Diamond-Diary-v3.2.2-final-six-fixes
+          path: MB-Diamond-Diary-v3.2.2-final-six-fixes.apk
