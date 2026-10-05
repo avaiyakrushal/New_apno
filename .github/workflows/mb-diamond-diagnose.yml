@@ -24,17 +24,10 @@ jobs:
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
           python tools/mb_patch_v317.py mbbuild
-      - name: Print dashboard data flow and rules
+      - name: Print local/cloud JS lifecycle
         run: |
-          F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           J=mbbuild/app/src/main/assets/app.js
-          echo '=== ENTRY JSON / CLOUD SAVE ==='
-          grep -nE 'entryFromJson|syncEntriesFromWeb|rebuildWorkerSummaryFromCloud|syncWorkerSummaryFromWeb|calculateMonthFromEntries|refreshBossDashboardFromEntries|watchPendingWorkers' "$F" || true
-          sed -n '1450,1665p' "$F"
-          echo '=== WORKER JOIN / SUMMARY ==='
-          sed -n '1120,1365p' "$F"
-          echo '=== JS ENTRY SHAPES ==='
-          grep -nE "type.?[:=].?['\"]?(diamond|hour|withdrawal)|pieces|amount|hours|syncWorkerSummary|mbSync|save.*entry|diamondEntries|hourEntries" "$J" | head -n 500 || true
-          echo '=== RULES / FIREBASE CONFIG FILES ==='
-          find mbbuild -maxdepth 4 -type f | grep -Ei 'firestore|firebase|rules|json' | sort || true
-          for R in $(find mbbuild -maxdepth 4 -type f | grep -Ei 'firestore.*rules|\.rules$'); do echo "=== $R ==="; cat "$R"; done
+          echo '=== JS START 1-115 ==='
+          sed -n '1,115p' "$J"
+          echo '=== JS CLOUD/BOOT 430-525 ==='
+          sed -n '430,525p' "$J"
