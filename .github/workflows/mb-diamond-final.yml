@@ -65,15 +65,20 @@ jobs:
       - name: Apply v3.1.7 explicit point controls
         run: python tools/mb_patch_v317.py mbbuild
 
-      - name: Validate v3.1.7 source
+      - name: Apply v3.1.8 phone-keyboard decimal correction
+        run: python tools/mb_patch_v318.py mbbuild
+
+      - name: Validate v3.1.8 source
         run: |
-          grep -q "versionName '3.1.7'" mbbuild/app/build.gradle
+          grep -q "versionName '3.1.8'" mbbuild/app/build.gradle
           grep -q 'secondaryButton("ઓફિસ (કલાકનું કામ)")' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'secondaryButton("હીરા (કારીગર)")' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'refreshBossDashboardFromEntries' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'id="hourRateDot"' mbbuild/app/src/main/assets/app.html
-          grep -q 'class="rate-dot"' mbbuild/app/src/main/assets/app.html
-          grep -q 'insertRateDot' mbbuild/app/src/main/assets/app.js
+          grep -q 'id="hourRateInput" type="text" inputmode="decimal"' mbbuild/app/src/main/assets/app.html
+          grep -q 'id="diamondRateGrid"' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'id="hourRateDot"' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'class="rate-dot"' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'insertRateDot' mbbuild/app/src/main/assets/app.js
 
       - name: Increase Gradle build memory
         run: |
@@ -94,13 +99,13 @@ jobs:
             --ks-key-alias androiddebugkey \
             --ks-pass pass:android \
             --key-pass pass:android \
-            --out MB-Diamond-Diary-v3.1.7-final.apk \
+            --out MB-Diamond-Diary-v3.1.8-final.apk \
             mbbuild/app/build/outputs/apk/debug/app-debug.apk
-          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.1.7-final.apk | tee signing-verify.txt
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.1.8-final.apk | tee signing-verify.txt
           grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' signing-verify.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.1.7-final
-          path: MB-Diamond-Diary-v3.1.7-final.apk
+          name: MB-Diamond-Diary-v3.1.8-final
+          path: MB-Diamond-Diary-v3.1.8-final.apk
