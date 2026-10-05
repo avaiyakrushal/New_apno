@@ -22,16 +22,16 @@ jobs:
           unzip -q source.zip -d mbbuild
       - name: Apply current patch
         run: python tools/mb_patch_v313.py mbbuild
-      - name: Print dashboard and worker sync code
+      - name: Print routing and cloud sync code
         run: |
           F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          echo '=== BOSS LISTENER 930-1080 ==='
-          sed -n '930,1080p' "$F"
-          echo '=== WORKER JOIN 1180-1265 ==='
-          sed -n '1180,1265p' "$F"
-          echo '=== SUMMARY WRITE 1490-1580 ==='
-          sed -n '1490,1580p' "$F"
-          echo '=== MONTH SUMMARY HELPERS 2000-2075 ==='
-          sed -n '2000,2075p' "$F"
-          echo '=== WORKER SETUP 2140-2205 ==='
-          sed -n '2140,2205p' "$F"
+          echo '=== ROLE / LOGIN 700-930 ==='
+          sed -n '700,930p' "$F"
+          echo '=== WORKER LISTENER 1120-1205 ==='
+          sed -n '1120,1205p' "$F"
+          echo '=== ENTRY SYNC 1570-1715 ==='
+          sed -n '1570,1715p' "$F"
+          echo '=== ROLE GRANT / SETUP 2065-2185 ==='
+          sed -n '2065,2185p' "$F"
+          echo '=== HTML/JS ROLE MARKERS ==='
+          grep -nE 'role|boss|worker|hour|diamond|office|ઓફિસ|શેઠ|હીરા|grantRole|selectRole' mbbuild/app/src/main/assets/app.js mbbuild/app/src/main/assets/app.html | head -n 500 || true
