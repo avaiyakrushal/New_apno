@@ -1,0 +1,39 @@
+name: Package MB Diamond Diary v3.2.2 Source
+
+on:
+  push:
+    branches:
+      - mb-diamond-diary-v3.1-build
+  workflow_dispatch:
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore source
+        run: |
+          cat mbparts/part-00 mbparts/part-01 mbparts/part-02 mbparts/part-03 mbparts/part-04 mbparts/part-05a mbparts/part-05b mbparts/part-05c > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir mbbuild
+          unzip -q source.zip -d mbbuild
+      - name: Apply patches through v3.2.2
+        run: |
+          python tools/mb_patch_v313.py mbbuild
+          python tools/mb_patch_v316.py mbbuild
+          python tools/mb_patch_v317.py mbbuild
+          python tools/mb_patch_v318.py mbbuild
+          python tools/mb_patch_v319.py mbbuild
+          python tools/mb_patch_v320.py mbbuild
+          python tools/mb_patch_v322.py mbbuild
+      - name: Verify source version
+        run: grep -q "versionName '3.2.2'" mbbuild/app/build.gradle
+      - name: Package source
+        run: |
+          cd mbbuild
+          zip -qr ../MB-Diamond-Diary-v3.2.2-source.zip .
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.2.2-source
+          path: MB-Diamond-Diary-v3.2.2-source.zip
