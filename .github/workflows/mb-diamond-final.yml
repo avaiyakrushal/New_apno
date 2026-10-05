@@ -18,17 +18,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Restore stable debug signing key
+      - name: Restore stable Firebase signing key
         id: signing-cache
         uses: actions/cache@v4
         with:
           path: .mb-signing/debug.keystore
           key: mb-diamond-diary-debug-signing-v1
-      - name: Create stable debug signing key once
-        if: steps.signing-cache.outputs.cache-hit != 'true'
+      - name: Require existing Firebase signing key
         run: |
-          mkdir -p .mb-signing
-          keytool -genkeypair -v -keystore .mb-signing/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          test -f .mb-signing/debug.keystore
+          keytool -list -v -keystore .mb-signing/debug.keystore -storepass android -alias androiddebugkey | tee signing-key.txt
+          grep -qi 'EE:51:44:E1:DC:33:C0:2C:F6:59:39:EC:78:94:8C:37:32:8A:1D:AF' signing-key.txt
       - name: Restore source
         run: |
           cat mbparts/part-00 mbparts/part-01 mbparts/part-02 mbparts/part-03 mbparts/part-04 mbparts/part-05a mbparts/part-05b mbparts/part-05c > source.b64
@@ -43,22 +43,27 @@ jobs:
           python tools/mb_patch_v318.py mbbuild
           python tools/mb_patch_v319.py mbbuild
           python tools/mb_patch_v320.py mbbuild
-      - name: Validate v3.2.0
+          sed -i "s/versionName '3.2.0'/versionName '3.2.1'/" mbbuild/app/build.gradle
+          sed -i 's/versionCode 57/versionCode 58/' mbbuild/app/build.gradle
+      - name: Validate source
         run: |
-          grep -q "versionName '3.2.0'" mbbuild/app/build.gradle
-          grep -q 'worker.put("active", true)' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q "versionName '3.2.1'" mbbuild/app/build.gradle
           grep -q 'હીરા કારીગર' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'ઓફિસ / કલાક' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'id="hourRateInput" type="text" inputmode="decimal"' mbbuild/app/src/main/assets/app.html
       - name: Increase Gradle build memory
         run: |
           printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
-      - name: Build debug APK
+      - name: Build APK
         run: gradle -p mbbuild :app:assembleDebug --stacktrace --no-daemon --max-workers=1
-      - name: Package APK
-        run: cp mbbuild/app/build/outputs/apk/debug/app-debug.apk MB-Diamond-Diary-v3.2.0-final.apk
+      - name: Re-sign and verify Firebase certificate
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.1-login-fixed.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.1-login-fixed.apk | tee apk-signing.txt
+          grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' apk-signing.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.0-final
-          path: MB-Diamond-Diary-v3.2.0-final.apk
+          name: MB-Diamond-Diary-v3.2.1-login-fixed
+          path: MB-Diamond-Diary-v3.2.1-login-fixed.apk
