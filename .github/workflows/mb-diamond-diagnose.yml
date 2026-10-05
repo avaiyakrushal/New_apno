@@ -1,0 +1,37 @@
+name: Diagnose MB Diamond Dashboard
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mb-diamond-diary-v3.1-build
+    paths:
+      - '.github/workflows/mb-diamond-diagnose.yml'
+      - 'tools/mb_patch_v313.py'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore source
+        run: |
+          cat mbparts/part-00 mbparts/part-01 mbparts/part-02 mbparts/part-03 mbparts/part-04 mbparts/part-05a mbparts/part-05b mbparts/part-05c > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir mbbuild
+          unzip -q source.zip -d mbbuild
+      - name: Apply current patch
+        run: python tools/mb_patch_v313.py mbbuild
+      - name: Print dashboard and worker sync code
+        run: |
+          F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          echo '=== BOSS LISTENER 930-1080 ==='
+          sed -n '930,1080p' "$F"
+          echo '=== WORKER JOIN 1180-1265 ==='
+          sed -n '1180,1265p' "$F"
+          echo '=== SUMMARY WRITE 1490-1580 ==='
+          sed -n '1490,1580p' "$F"
+          echo '=== MONTH SUMMARY HELPERS 2000-2075 ==='
+          sed -n '2000,2075p' "$F"
+          echo '=== WORKER SETUP 2140-2205 ==='
+          sed -n '2140,2205p' "$F"
