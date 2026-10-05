@@ -42,11 +42,12 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Install stable debug signing key
+      - name: Show Firebase signing fingerprints
         run: |
-          mkdir -p "$HOME/.android"
-          cp .mb-signing/debug.keystore "$HOME/.android/debug.keystore"
-          keytool -list -v -keystore .mb-signing/debug.keystore -storepass android -alias androiddebugkey | grep -E 'SHA1:|SHA256:'
+          keytool -list -v \
+            -keystore .mb-signing/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey | grep -E 'SHA1:|SHA256:'
 
       - name: Restore source
         run: |
@@ -65,11 +66,25 @@ jobs:
       - name: Build debug APK
         run: gradle -p mbbuild :app:assembleDebug --stacktrace --no-daemon --max-workers=1
 
-      - name: Rename APK
-        run: cp mbbuild/app/build/outputs/apk/debug/app-debug.apk MB-Diamond-Diary-v3.1.4-stable-login.apk
+      - name: Re-sign APK with Firebase-registered stable key
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found"
+            exit 1
+          fi
+          "$APKSIGNER" sign \
+            --ks .mb-signing/debug.keystore \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out MB-Diamond-Diary-v3.1.5-login-fixed.apk \
+            mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.1.5-login-fixed.apk | tee signing-verify.txt
+          grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' signing-verify.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.1.4-stable-login
-          path: MB-Diamond-Diary-v3.1.4-stable-login.apk
+          name: MB-Diamond-Diary-v3.1.5-login-fixed
+          path: MB-Diamond-Diary-v3.1.5-login-fixed.apk
