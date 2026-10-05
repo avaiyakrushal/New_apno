@@ -22,13 +22,15 @@ jobs:
           unzip -q source.zip -d mbbuild
       - name: Apply current patch
         run: python tools/mb_patch_v313.py mbbuild
-      - name: Locate methods
+      - name: Print exact fix targets
         run: |
           F=mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -nE 'grantRole|pushCloudEntries|watchCloud|cloudEntries|diaryEntries|pushEntries|loadEntries|setWorkerMode|roleChoice' "$F" || true
-          echo '=== 1250-1490 ==='
-          sed -n '1250,1490p' "$F"
-          echo '=== 1710-2005 ==='
-          sed -n '1710,2005p' "$F"
-          echo '=== UI setup role-choice references ==='
-          grep -nE 'roleChoice|bossChoice|workerChoice|saveRole\(' "$F" || true
+          J=mbbuild/app/src/main/assets/app.js
+          echo '=== ROLE CHOOSER 260-325 ==='
+          sed -n '260,325p' "$F"
+          echo '=== JOIN 1190-1260 ==='
+          sed -n '1190,1260p' "$F"
+          echo '=== PAGE FINISH 160-200 ==='
+          sed -n '160,205p' "$F"
+          echo '=== CLOUD MERGE JS 420-475 ==='
+          sed -n '420,475p' "$J"
