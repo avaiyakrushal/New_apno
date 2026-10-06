@@ -34,7 +34,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.3
+      - name: Apply patches through v3.2.4
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -45,17 +45,16 @@ jobs:
           python tools/mb_patch_v322.py mbbuild
           python tools/mb_patch_v323.py mbbuild
           python tools/mb_patch_v324.py mbbuild
-      - name: Validate v3.2.3 worker and compact UI fixes
+          python tools/mb_patch_v325.py mbbuild
+      - name: Validate v3.2.4 boss lists and decimal fixes
         run: |
-          grep -q "versionName '3.2.3'" mbbuild/app/build.gradle
+          grep -q "versionName '3.2.4'" mbbuild/app/build.gradle
           grep -q 'worker_company_code' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'worker.put("bossUid", companyId)' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'whereEqualTo("bossUid", companyId)' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'pushWorkerCompanyCard' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'loadAllWorkersFallback' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'styleBossDepartmentButtons' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'id="hourValue" type="text" inputmode="decimal"' mbbuild/app/src/main/assets/app.html
-          grep -q 'id="hourRateInput" type="text" inputmode="decimal" pattern=' mbbuild/app/src/main/assets/app.html
-          ! grep -q 'દૈનિક નોંધ અને માસિક હિસાબ' mbbuild/app/src/main/assets/app.html
-          ! grep -q 'હીરા, કલાક અને ખર્ચની નોંધ ભરો' mbbuild/app/src/main/assets/app.html
+          grep -q 'id="hourRateInput" type="text" inputmode="decimal" value=' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'id="hourRateInput" type="text" inputmode="decimal" pattern=' mbbuild/app/src/main/assets/app.html
           ! grep -q 'hourRateDot' mbbuild/app/src/main/assets/app.html
       - name: Increase Gradle build memory
         run: |
@@ -65,11 +64,11 @@ jobs:
       - name: Re-sign and verify Firebase certificate
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.3-worker-fixes.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
-          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.3-worker-fixes.apk | tee apk-signing.txt
+          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.4-boss-worker-lists.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.4-boss-worker-lists.apk | tee apk-signing.txt
           grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' apk-signing.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.3-worker-fixes
-          path: MB-Diamond-Diary-v3.2.3-worker-fixes.apk
+          name: MB-Diamond-Diary-v3.2.4-boss-worker-lists
+          path: MB-Diamond-Diary-v3.2.4-boss-worker-lists.apk
