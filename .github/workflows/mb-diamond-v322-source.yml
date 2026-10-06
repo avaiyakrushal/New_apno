@@ -1,4 +1,4 @@
-name: Package MB Diamond Diary v3.2.7 Source
+name: Package MB Diamond Diary v3.2.8 Source
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.7
+      - name: Apply patches through v3.2.8
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -33,7 +33,8 @@ jobs:
           python tools/mb_patch_v327.py mbbuild
           python tools/mb_patch_v328.py mbbuild
           python tools/mb_patch_v329.py mbbuild
-      - name: Verify v3.2.7 source
+          python tools/mb_patch_v330.py mbbuild
+      - name: Verify v3.2.8 source
         run: |
           grep -q "versionName '3.2.7'" mbbuild/app/build.gradle
           grep -q 'mirrorWorkerMembership' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
@@ -41,12 +42,14 @@ jobs:
           grep -q 'loadBossWorkersFromUsers' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'watchWorkerNoticeSubcollections' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'final String sharedText = clean' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'repairWorkerFromLocalMembership' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'localMembershipWins' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
       - name: Package source
         run: |
           cd mbbuild
-          zip -qr ../MB-Diamond-Diary-v3.2.7-source.zip .
+          zip -qr ../MB-Diamond-Diary-v3.2.8-source.zip .
       - name: Upload source
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.7-source
-          path: MB-Diamond-Diary-v3.2.7-source.zip
+          name: MB-Diamond-Diary-v3.2.8-source
+          path: MB-Diamond-Diary-v3.2.8-source.zip
