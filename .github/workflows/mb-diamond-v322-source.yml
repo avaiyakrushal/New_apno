@@ -36,7 +36,7 @@ jobs:
           python tools/mb_patch_v330.py mbbuild
       - name: Verify v3.2.8 source
         run: |
-          grep -q "versionName '3.2.7'" mbbuild/app/build.gradle
+          grep -q "versionName '3.2.8'" mbbuild/app/build.gradle
           grep -q 'mirrorWorkerMembership' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'collection("members")' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'loadBossWorkersFromUsers' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
