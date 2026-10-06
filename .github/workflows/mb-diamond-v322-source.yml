@@ -1,4 +1,4 @@
-name: Package MB Diamond Diary v3.2.3 Source
+name: Package MB Diamond Diary v3.2.4 Source
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.3
+      - name: Apply patches through v3.2.4
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -28,19 +28,20 @@ jobs:
           python tools/mb_patch_v322.py mbbuild
           python tools/mb_patch_v323.py mbbuild
           python tools/mb_patch_v324.py mbbuild
-      - name: Verify v3.2.3 source
+          python tools/mb_patch_v325.py mbbuild
+      - name: Verify v3.2.4 source
         run: |
-          grep -q "versionName '3.2.3'" mbbuild/app/build.gradle
-          grep -q 'worker_company_code' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'whereEqualTo("bossUid", companyId)' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'id="hourValue" type="text" inputmode="decimal"' mbbuild/app/src/main/assets/app.html
-          ! grep -q 'દૈનિક નોંધ અને માસિક હિસાબ' mbbuild/app/src/main/assets/app.html
+          grep -q "versionName '3.2.4'" mbbuild/app/build.gradle
+          grep -q 'loadAllWorkersFallback' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'styleBossDepartmentButtons' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'id="hourRateInput" type="text" inputmode="decimal" value=' mbbuild/app/src/main/assets/app.html
+          ! grep -q 'id="hourRateInput" type="text" inputmode="decimal" pattern=' mbbuild/app/src/main/assets/app.html
       - name: Package source
         run: |
           cd mbbuild
-          zip -qr ../MB-Diamond-Diary-v3.2.3-source.zip .
+          zip -qr ../MB-Diamond-Diary-v3.2.4-source.zip .
       - name: Upload source
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.3-source
-          path: MB-Diamond-Diary-v3.2.3-source.zip
+          name: MB-Diamond-Diary-v3.2.4-source
+          path: MB-Diamond-Diary-v3.2.4-source.zip
