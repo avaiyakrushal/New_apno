@@ -80,5 +80,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.8-membership-self-heal
-          path: MB-Diamond-Diary-v3.2.8-membership-self-heal.apk
+          name: MB-Diamond-Diary-v3.2.9-google-login-fix
+          path: MB-Diamond-Diary-v3.2.9-google-login-fix.apk
