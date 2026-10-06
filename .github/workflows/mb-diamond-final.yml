@@ -34,7 +34,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.6
+      - name: Apply patches through v3.2.7
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -48,17 +48,18 @@ jobs:
           python tools/mb_patch_v325.py mbbuild
           python tools/mb_patch_v326.py mbbuild
           python tools/mb_patch_v327.py mbbuild
-      - name: Validate v3.2.6 notification connectivity
+          python tools/mb_patch_v328.py mbbuild
+      - name: Validate v3.2.7 redundant connectivity
         run: |
-          grep -q "versionName '3.2.6'" mbbuild/app/build.gradle
-          grep -q 'snapshotCompanyId.length() == 0' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'class="rate-dot"' mbbuild/app/src/main/assets/app.html
+          grep -q "versionName '3.2.7'" mbbuild/app/build.gradle
+          grep -q 'mirrorWorkerMembership' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'collection("members")' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'loadBossWorkersFromUsers' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'bossMembersListener' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'watchWorkerNoticeSubcollections' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'notificationFallbackListener' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'id="hourRateDot"' mbbuild/app/src/main/assets/app.html
           grep -q 'id="hourValueDot"' mbbuild/app/src/main/assets/app.html
-          grep -q 'insertDecimalPoint' mbbuild/app/src/main/assets/app.js
-          grep -q 'watchWorkerSharedNotifications' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'mirrorCurrentBossNoticesToCompanyCode' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'noticeFeed' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
       - name: Increase Gradle build memory
         run: |
           printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
@@ -67,11 +68,11 @@ jobs:
       - name: Re-sign and verify Firebase certificate
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.6-notification-connectivity.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
-          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.6-notification-connectivity.apk | tee apk-signing.txt
+          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.7-connectivity-fix.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.7-connectivity-fix.apk | tee apk-signing.txt
           grep -qi 'ee5144e1dc33c02cf65939ec78948c37328a1daf' apk-signing.txt
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.6-notification-connectivity
-          path: MB-Diamond-Diary-v3.2.6-notification-connectivity.apk
+          name: MB-Diamond-Diary-v3.2.7-connectivity-fix
+          path: MB-Diamond-Diary-v3.2.7-connectivity-fix.apk
