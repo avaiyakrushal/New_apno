@@ -1,4 +1,4 @@
-name: Package MB Diamond Diary v3.2.8 Source
+name: Package MB Diamond Diary v3.2.9 Source
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.8
+      - name: Apply patches through v3.2.9
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -34,7 +34,8 @@ jobs:
           python tools/mb_patch_v328.py mbbuild
           python tools/mb_patch_v329.py mbbuild
           python tools/mb_patch_v330.py mbbuild
-      - name: Verify v3.2.8 source
+          python tools/mb_patch_v331.py mbbuild
+      - name: Verify v3.2.9 source
         run: |
           grep -q "versionName '3.2.8'" mbbuild/app/build.gradle
           grep -q 'mirrorWorkerMembership' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
@@ -47,9 +48,9 @@ jobs:
       - name: Package source
         run: |
           cd mbbuild
-          zip -qr ../MB-Diamond-Diary-v3.2.8-source.zip .
+          zip -qr ../MB-Diamond-Diary-v3.2.9-source.zip .
       - name: Upload source
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.8-source
-          path: MB-Diamond-Diary-v3.2.8-source.zip
+          name: MB-Diamond-Diary-v3.2.9-source
+          path: MB-Diamond-Diary-v3.2.9-source.zip
