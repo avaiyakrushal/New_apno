@@ -61,8 +61,8 @@ new_edit="""    if(editHourId){
 if old_edit not in s: raise SystemExit("hour edit save branch not found")
 s=s.replace(old_edit,new_edit)
 
-needle="  const saveDiamondRates=$('#saveDiamondRates');
-"
+needle="""  const saveDiamondRates=$('#saveDiamondRates');
+"""
 point_js="""  $$('#diamondRateGrid .rate-dot').forEach(btn=>btn.addEventListener('click',()=>insertDecimalPoint(btn.previousElementSibling)));
   const hourRateDot=$('#hourRateDot'); if(hourRateDot) hourRateDot.addEventListener('click',()=>insertDecimalPoint($('#hourRateInput')));
   const hourValueDot=$('#hourValueDot'); if(hourValueDot) hourValueDot.addEventListener('click',()=>{
