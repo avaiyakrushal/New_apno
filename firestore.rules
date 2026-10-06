@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return signedIn() &&
+        request.auth.token.email == 'maniyajitesh56@gmail.com';
+    }
+
+    function companyCodeData(code) {
+      return get(/databases/$(database)/documents/companyCodes/$(code)).data;
+    }
+
+    function isCodeBoss(code) {
+      return signedIn() &&
+        companyCodeData(code).bossUid == request.auth.uid;
+    }
+
+    function isCodeMember(code) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/companyCodes/$(code)/members/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/companyCodes/$(code)/members/$(request.auth.uid)).data.removed != true;
+    }
+
+    function isCompanyBoss(companyId) {
+      return signedIn() && request.auth.uid == companyId;
+    }
+
+    function isCompanyMember(companyId, uid) {
+      return exists(/databases/$(database)/documents/companies/$(companyId)/members/$(uid)) &&
+        get(/databases/$(database)/documents/companies/$(companyId)/members/$(uid)).data.removed != true;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+      allow read: if isSuperAdmin();
+      allow delete: if false;
+    }
+
+    match /companies/{companyId} {
+      allow create, update, delete, read: if isCompanyBoss(companyId);
+      allow read: if isSuperAdmin();
+
+      match /members/{uid} {
+        allow create, update: if signedIn() && (
+          request.auth.uid == uid ||
+          request.auth.uid == companyId
+        );
+        allow read: if signedIn() && (
+          request.auth.uid == uid ||
+          request.auth.uid == companyId
+        );
+        allow delete: if request.auth.uid == companyId;
+      }
+
+      match /notices/{noticeId} {
+        allow create, update, delete: if isCompanyBoss(companyId);
+        allow read: if signedIn() && (
+          isCompanyBoss(companyId) ||
+          isCompanyMember(companyId, request.auth.uid)
+        );
+      }
+    }
+
+    match /companyCodes/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn() &&
+        request.resource.data.bossUid == request.auth.uid &&
+        request.resource.data.companyId == request.auth.uid;
+      allow update, delete: if isCodeBoss(code);
+
+      match /members/{uid} {
+        allow create, update: if signedIn() && (
+          request.auth.uid == uid ||
+          isCodeBoss(code)
+        ) &&
+        request.resource.data.companyCode == code &&
+        request.resource.data.companyId == companyCodeData(code).companyId;
+        allow read: if signedIn() && (
+          request.auth.uid == uid ||
+          isCodeBoss(code)
+        );
+        allow delete: if isCodeBoss(code);
+      }
+
+      match /notices/{noticeId} {
+        allow create, update, delete: if isCodeBoss(code);
+        allow read: if signedIn() && (
+          isCodeBoss(code) ||
+          isCodeMember(code)
+        );
+      }
+    }
+
+    match /workers/{uid} {
+      allow create, update, read: if signedIn() && request.auth.uid == uid;
+      allow read, update: if signedIn() &&
+        resource.data.companyId == request.auth.uid;
+      allow read, update: if signedIn() &&
+        resource.data.bossUid == request.auth.uid;
+      allow read: if isSuperAdmin();
+      allow delete: if false;
+    }
+
+    match /notifications/{noticeId} {
+      allow create: if signedIn() &&
+        request.resource.data.companyId == request.auth.uid &&
+        request.resource.data.senderUid == request.auth.uid;
+      allow read, update, delete: if signedIn() &&
+        resource.data.companyId == request.auth.uid;
+    }
+
+    match /diaryEntries/{uid}/items/{itemId} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read: if signedIn() &&
+        isCompanyMember(request.auth.uid, uid);
+    }
+
+    match /userSettings/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}
