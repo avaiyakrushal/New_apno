@@ -1,4 +1,4 @@
-name: Package MB Diamond Diary v3.2.5 Source
+name: Package MB Diamond Diary v3.2.6 Source
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
           base64 -d source.b64 > source.zip
           mkdir mbbuild
           unzip -q source.zip -d mbbuild
-      - name: Apply patches through v3.2.5
+      - name: Apply patches through v3.2.6
         run: |
           python tools/mb_patch_v313.py mbbuild
           python tools/mb_patch_v316.py mbbuild
@@ -30,19 +30,19 @@ jobs:
           python tools/mb_patch_v324.py mbbuild
           python tools/mb_patch_v325.py mbbuild
           python tools/mb_patch_v326.py mbbuild
-      - name: Verify v3.2.5 source
+          python tools/mb_patch_v327.py mbbuild
+      - name: Verify v3.2.6 source
         run: |
-          grep -q "versionName '3.2.5'" mbbuild/app/build.gradle
-          grep -q 'snapshotCompanyId.length() == 0' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
-          grep -q 'class="rate-dot"' mbbuild/app/src/main/assets/app.html
-          grep -q 'id="hourRateDot"' mbbuild/app/src/main/assets/app.html
-          grep -q 'id="hourValueDot"' mbbuild/app/src/main/assets/app.html
+          grep -q "versionName '3.2.6'" mbbuild/app/build.gradle
+          grep -q 'watchWorkerSharedNotifications' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'mirrorCurrentBossNoticesToCompanyCode' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'noticeFeed' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
       - name: Package source
         run: |
           cd mbbuild
-          zip -qr ../MB-Diamond-Diary-v3.2.5-source.zip .
+          zip -qr ../MB-Diamond-Diary-v3.2.6-source.zip .
       - name: Upload source
         uses: actions/upload-artifact@v4
         with:
-          name: MB-Diamond-Diary-v3.2.5-source
-          path: MB-Diamond-Diary-v3.2.5-source.zip
+          name: MB-Diamond-Diary-v3.2.6-source
+          path: MB-Diamond-Diary-v3.2.6-source.zip
