@@ -1,0 +1,248 @@
+name: Build MB Diamond Diary v3.2.18
+on:
+  push:
+    branches: [mb-diamond-diary-v3.2.18-build]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct v3.2.17 source
+        run: |
+          cat mb-build/part*.txt | base64 -d > mb-source.zip
+          mkdir -p project
+          unzip -q mb-source.zip -d project
+
+      - name: Apply v3.2.18 one-shot fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path("project")
+
+          gradle=root/"app/build.gradle"
+          s=gradle.read_text()
+          s=s.replace("versionCode 75","versionCode 76").replace("versionName '3.2.17'","versionName '3.2.18'")
+          gradle.write_text(s)
+
+          html=root/"app/src/main/assets/app.html"
+          s=html.read_text()
+          s=s.replace(
+            '<div id="diamondEditStrip" class="entry-edit-strip"><span>આ તારીખ અને ડિપાર્ટમેન્ટની જૂની એન્ટ્રી મળી છે.</span><button id="diamondEditNow" class="choice" type="button">✏️ એડિટ કરો</button></div>',
+            '<div id="diamondEditStrip" class="entry-edit-strip"><span>આ તારીખ અને ડિપાર્ટમેન્ટની જૂની એન્ટ્રી મળી છે.</span><div class="edit-strip-actions"><button id="diamondEditNow" class="choice" type="button">✏️ એડિટ કરો</button><button id="diamondDeleteNow" class="choice danger" type="button">🗑️ ડીલીટ</button></div></div><button class="choice entry-list-link" type="button" data-screen="diamondList">📋 જૂની હીરાની એન્ટ્રીઓ જુઓ / ડીલીટ</button>'
+          )
+          s=s.replace(
+            '<section id="hours" class="screen"><h2>કલાકનું કામ</h2><div class="panel"><label>કામની તારીખ</label><input id="hourDate" type="date"><div id="hourEditStrip" class="entry-edit-strip"><span>આ તારીખની જૂની એન્ટ્રી મળી છે.</span><button id="hourEditNow" class="choice" type="button">✏️ એડિટ કરો</button></div><label>કામના કલાક</label>',
+            '<section id="hours" class="screen"><h2>કલાકનું કામ</h2><div class="panel"><label>કામની તારીખ</label><input id="hourDate" type="date"><div id="hourEditStrip" class="entry-edit-strip"><span>આ તારીખની જૂની એન્ટ્રી મળી છે.</span><div class="edit-strip-actions"><button id="hourEditNow" class="choice" type="button">✏️ એડિટ કરો</button><button id="hourDeleteNow" class="choice danger" type="button">🗑️ ડીલીટ</button></div></div><button class="choice entry-list-link" type="button" data-screen="hoursList">📋 જૂની કલાકની એન્ટ્રીઓ જુઓ / ડીલીટ</button><label>કામના કલાક</label>'
+          )
+          s=s.replace(
+            '.entry-edit-strip .choice{margin:0;padding:8px 12px;background:#00796b;color:#fff;border-color:#00796b;white-space:nowrap}',
+            '.entry-edit-strip .choice{margin:0;padding:8px 12px;background:#00796b;color:#fff;border-color:#00796b;white-space:nowrap}.entry-edit-strip .edit-strip-actions{display:flex;gap:7px;flex-wrap:wrap}.entry-edit-strip .choice.danger{background:#fff5f7;color:#b80f38;border-color:#d92d4f}.entry-list-link{width:100%;margin:7px 0 9px!important;padding:9px!important}'
+          )
+          s=re.sub(r'<div id="bossWorkerPanel" class="panel" style="display:none">.*?</div>','',s,count=1,flags=re.S)
+          old='<div id="diamondRateGrid" class="grid"><b>ગ્રેડ</b><b>દર ₹</b><b>પોઇન્ટ</b><b>A</b><input type="text" inputmode="decimal" value="40"><button type="button" class="rate-dot">.</button><b>B</b><input type="text" inputmode="decimal" value="50"><button type="button" class="rate-dot">.</button><b>C</b><input type="text" inputmode="decimal" value="60"><button type="button" class="rate-dot">.</button><b>D</b><input type="text" inputmode="decimal" value="70"><button type="button" class="rate-dot">.</button><b>E</b><input type="text" inputmode="decimal" value="80"><button type="button" class="rate-dot">.</button><b>F</b><input type="text" inputmode="decimal" value="90"><button type="button" class="rate-dot">.</button><b>G</b><input type="text" inputmode="decimal" value="100"><button type="button" class="rate-dot">.</button></div>'
+          new='<div id="diamondRateGrid" class="grid rate-grid-simple"><b>ગ્રેડ</b><b>દર ₹</b><b>A</b><input type="text" inputmode="decimal" value="40"><b>B</b><input type="text" inputmode="decimal" value="50"><b>C</b><input type="text" inputmode="decimal" value="60"><b>D</b><input type="text" inputmode="decimal" value="70"><b>E</b><input type="text" inputmode="decimal" value="80"><b>F</b><input type="text" inputmode="decimal" value="90"><b>G</b><input type="text" inputmode="decimal" value="100"></div>'
+          s=s.replace(old,new)
+          s=s.replace('<input id="hourRateInput" type="text" inputmode="decimal" value="100"><button id="hourRateDot" type="button" class="choice rate-dot-hour">. પોઇન્ટ</button>','<input id="hourRateInput" type="text" inputmode="decimal" value="100">')
+          s=s.replace('.rate-dot{width:100%;min-height:38px;border:1px solid #d8dee8;border-radius:10px;background:#fff;color:#9b1e3b;font-weight:900;font-size:22px;line-height:1}.rate-dot-hour{margin:8px 0 4px;padding:8px 14px;font-size:15px}', '.rate-dot-hour{margin:8px 0 4px;padding:8px 14px;font-size:15px}.rate-grid-simple{grid-template-columns:60px minmax(0,1fr)!important}')
+          s=s.replace("  const legacy=document.getElementById('bossWorkerPanel'); if(legacy) legacy.style.display = boss ? 'block' : 'none';", "  const legacy=document.getElementById('bossWorkerPanel'); if(legacy) legacy.style.display = 'none';")
+          html.write_text(s)
+
+          js=root/"app/src/main/assets/app.js"
+          s=js.read_text()
+          s=s.replace("  let entries = load(key('mb_entries_v1'), []);\n",
+          """  let entries = load(key('mb_entries_v1'), []);
+  let deletedEntryMap = load(key('mb_deleted_entry_ids_v1'), {});
+  if(!deletedEntryMap || typeof deletedEntryMap!=='object' || Array.isArray(deletedEntryMap)) deletedEntryMap={};
+  const persistDeletedEntryMap=()=>localStorage.setItem(key('mb_deleted_entry_ids_v1'),JSON.stringify(deletedEntryMap));
+  const pruneDeletedEntryMap=()=>{const cutoff=Date.now()-30*24*60*60*1000;let changed=false;Object.keys(deletedEntryMap).forEach(id=>{if(Number(deletedEntryMap[id]||0)<cutoff){delete deletedEntryMap[id];changed=true}});if(changed)persistDeletedEntryMap();};
+  const markDeletedIds=ids=>{(ids||[]).filter(Boolean).forEach(id=>deletedEntryMap[String(id)]=Date.now());persistDeletedEntryMap();};
+  pruneDeletedEntryMap();
+""")
+          s=s.replace("  const diamondEditNow = $('#diamondEditNow');\n  const diamondSave = $('#diamondSave');","  const diamondEditNow = $('#diamondEditNow');\n  const diamondDeleteNow = $('#diamondDeleteNow');\n  const diamondSave = $('#diamondSave');")
+          s=s.replace("  const hourEditNow=$('#hourEditNow');\n  const hourSave=$('#hourSave');","  const hourEditNow=$('#hourEditNow');\n  const hourDeleteNow=$('#hourDeleteNow');\n  const hourSave=$('#hourSave');")
+          s=s.replace("  if(diamondEditNow) diamondEditNow.onclick=()=>{if(pendingDiamondGroup)startDiamondEdit(pendingDiamondGroup);};","  if(diamondEditNow) diamondEditNow.onclick=()=>{if(pendingDiamondGroup)startDiamondEdit(pendingDiamondGroup);};\n  if(diamondDeleteNow) diamondDeleteNow.onclick=()=>{if(pendingDiamondGroup)deleteDiamondGroup(pendingDiamondGroup);};")
+          s=s.replace("  if(hoursInputs[0])hoursInputs[0].addEventListener('change',detectHourExisting);\n  if(hourEditNow)hourEditNow.onclick=()=>{if(pendingHourId)startHourEdit(pendingHourId);};","  if(hoursInputs[0])hoursInputs[0].addEventListener('change',detectHourExisting);\n  if(hourEditNow)hourEditNow.onclick=()=>{if(pendingHourId)startHourEdit(pendingHourId);};\n  if(hourDeleteNow)hourDeleteNow.onclick=()=>{if(pendingHourId)deleteHourEntry(pendingHourId);};")
+          s=s.replace("""  function deleteIds(ids){
+    const set=new Set((ids||[]).filter(Boolean)); if(!set.size)return;
+    entries.filter(e=>set.has(e.id)).forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});
+    entries=entries.filter(e=>!set.has(e.id)); persistLocal(); renderReports(); renderEntryLists();
+  }
+""","""  function deleteIds(ids){
+    const set=new Set((ids||[]).filter(Boolean).map(String)); if(!set.size)return;
+    markDeletedIds([...set]);
+    entries.filter(e=>set.has(String(e.id))).forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});
+    entries=entries.filter(e=>!set.has(String(e.id))); persistLocal(); renderReports(); renderEntryLists();
+  }
+""")
+          s=s.replace("      const oldWithdrawals=entries.filter(e=>e.type==='withdrawal'&&e.source==='diamond'&&e.date===date&&e.department===department);\n      [...oldDiamond,...oldWithdrawals].forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});","      const oldWithdrawals=entries.filter(e=>e.type==='withdrawal'&&e.source==='diamond'&&e.date===date&&e.department===department);\n      markDeletedIds([...oldDiamond,...oldWithdrawals].map(e=>e.id));\n      [...oldDiamond,...oldWithdrawals].forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});")
+          s=s.replace("      const oldHours=entries.filter(e=>e.type==='hour'&&e.date===date), oldWithdrawals=entries.filter(e=>e.type==='withdrawal'&&e.source==='hour'&&e.date===date);\n      [...oldHours,...oldWithdrawals].forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});","      const oldHours=entries.filter(e=>e.type==='hour'&&e.date===date), oldWithdrawals=entries.filter(e=>e.type==='withdrawal'&&e.source==='hour'&&e.date===date);\n      markDeletedIds([...oldHours,...oldWithdrawals].map(e=>e.id));\n      [...oldHours,...oldWithdrawals].forEach(e=>{try{window.Android?.deleteEntry(e.id)}catch(_){}});")
+          s=s.replace("  $$('#diamondRateGrid .rate-dot').forEach(btn=>btn.addEventListener('click',()=>insertDecimalPoint(btn.previousElementSibling)));\n  const hourRateDot=$('#hourRateDot'); if(hourRateDot) hourRateDot.addEventListener('click',()=>insertDecimalPoint($('#hourRateInput')));\n","")
+          old="""  window.mbCloudEntries = cloud => {
+    if (!Array.isArray(cloud)) return;
+    ensureIds();
+    if (cloud.length === 0 && entries.length) {
+      try { window.Android?.syncEntries(JSON.stringify(entries)); } catch (_) {}
+      return;
+    }
+    const cloudIds=new Set(cloud.filter(e=>e&&e.id).map(e=>String(e.id)));
+    const missing=entries.filter(e=>e&&e.id&&!cloudIds.has(String(e.id)));
+    if(missing.length){ try{window.Android?.syncEntries(JSON.stringify(missing));}catch(_){} }
+    const map = new Map(entries.map(e=>[String(e.id||''),e]));
+    cloud.forEach(e=>{ if(e && e.id){ const item=(e.type==='diamond'||(e.type==='withdrawal'&&e.source==='diamond'))?{...e,department:normalizeDepartment(e.department)}:e; map.set(String(item.id),item); } });
+    entries=[...map.values()];
+    persistLocal(); renderReports();
+  };
+"""
+          new="""  window.mbCloudEntries = cloud => {
+    if (!Array.isArray(cloud)) return;
+    ensureIds(); pruneDeletedEntryMap();
+    const rawCloudIds=new Set(cloud.filter(e=>e&&e.id).map(e=>String(e.id)));
+    Object.keys(deletedEntryMap).forEach(id=>{if(rawCloudIds.has(id)){try{window.Android?.deleteEntry(id)}catch(_){}}});
+    const cleanCloud=cloud.filter(e=>e&&e.id&&!deletedEntryMap[String(e.id)]);
+    const cloudIds=new Set(cleanCloud.map(e=>String(e.id)));
+    let tombstoneChanged=false;Object.keys(deletedEntryMap).forEach(id=>{if(!rawCloudIds.has(id)){delete deletedEntryMap[id];tombstoneChanged=true}});if(tombstoneChanged)persistDeletedEntryMap();
+    const liveEntries=entries.filter(e=>e&&e.id&&!deletedEntryMap[String(e.id)]);
+    if (cleanCloud.length === 0 && liveEntries.length) {
+      try { window.Android?.syncEntries(JSON.stringify(liveEntries)); } catch (_) {}
+      entries=liveEntries; persistLocal(); renderReports(); return;
+    }
+    const missing=liveEntries.filter(e=>!cloudIds.has(String(e.id)));
+    if(missing.length){ try{window.Android?.syncEntries(JSON.stringify(missing));}catch(_){} }
+    const map = new Map(liveEntries.map(e=>[String(e.id||''),e]));
+    cleanCloud.forEach(e=>{ const item=(e.type==='diamond'||(e.type==='withdrawal'&&e.source==='diamond'))?{...e,department:normalizeDepartment(e.department)}:e; map.set(String(item.id),item); });
+    entries=[...map.values()];
+    persistLocal(); renderReports();
+  };
+"""
+          if old not in s: raise SystemExit("cloud sync block not found")
+          s=s.replace(old,new)
+          js.write_text(s)
+
+          java=root/"app/src/main/java/com/example/diamonddiary/MainActivity.java"
+          s=java.read_text()
+          s=s.replace("    private ListenerRegistration notificationCodeListener;\n","    private ListenerRegistration notificationCodeListener;\n    private ListenerRegistration notificationDirectListener;\n")
+          s=s.replace("""    private void handleNotificationIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("open_notifications", false)) {
+""","""    private void cacheNoticeFromIntent(Intent intent) {
+        if (intent == null || intent.getExtras() == null) return;
+        try {
+            Bundle extras = intent.getExtras();
+            String text = safe(extras.getString("text"));
+            if (text.length() == 0) text = safe(extras.getString("body"));
+            String noticeId = safe(extras.getString("noticeId"));
+            if (noticeId.length() == 0) noticeId = safe(extras.getString("id"));
+            String companyId = safe(extras.getString("companyId"));
+            String companyCode = safe(extras.getString("companyCode"));
+            String image = safe(extras.getString("imageBase64"));
+            if (text.length() == 0 && image.length() == 0) return;
+            long createdAt = System.currentTimeMillis();
+            try { String raw = safe(extras.getString("createdAtMillis")); if (raw.length() > 0) createdAt = Long.parseLong(raw); } catch (Exception ignored) {}
+            if (noticeId.length() == 0) noticeId = "tap-" + createdAt + "-" + Math.abs(text.hashCode());
+            FirebaseUser active = auth == null ? null : auth.getCurrentUser();
+            org.json.JSONObject item = new org.json.JSONObject();
+            item.put("id", noticeId); item.put("text", text); item.put("imageBase64", image);
+            item.put("createdAtMillis", createdAt); item.put("companyId", companyId); item.put("companyCode", companyCode);
+            item.put("recipientUid", active == null ? "" : active.getUid());
+            android.content.SharedPreferences prefs = getSharedPreferences(NOTICE_CACHE_PREFS, MODE_PRIVATE);
+            org.json.JSONArray old = new org.json.JSONArray(prefs.getString(NOTICE_CACHE_KEY, "[]"));
+            org.json.JSONArray out = new org.json.JSONArray(); out.put(item);
+            for (int i=0; i<old.length() && out.length()<50; i++) { org.json.JSONObject one=old.optJSONObject(i); if (one==null || noticeId.equals(one.optString("id",""))) continue; out.put(one); }
+            prefs.edit().putString(NOTICE_CACHE_KEY, out.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    private void handleNotificationIntent(Intent intent) {
+        cacheNoticeFromIntent(intent);
+        if (intent != null && intent.getBooleanExtra("open_notifications", false)) {
+""")
+          s=s.replace("""    @Override protected void onResume() {
+        super.onResume();
+        mergeCachedPushNotifications();
+        if (page != null && page.getVisibility() == View.VISIBLE) {
+""","""    @Override protected void onResume() {
+        super.onResume();
+        mergeCachedPushNotifications();
+        if ("worker".equals(currentRole) && currentCompanyId != null && currentCompanyId.length() > 0) {
+            watchNotifications(currentCompanyId);
+        }
+        if (page != null && page.getVisibility() == View.VISIBLE) {
+""")
+          needle='''        if (companyId != null && companyId.length() > 0) {
+            notificationFallbackListener = database.collection("companies").document(companyId).collection("notices").limit(50)
+                .addSnapshotListener((snap,error) -> { if (error == null && snap != null) consumeSharedNoticeSnapshot(snap); });
+            notificationCompanyListener = database.collection("companies").document(companyId)
+                .addSnapshotListener((doc,error) -> {
+                    if (error != null || doc == null || !doc.exists()) return;
+                    Object raw = doc.get("latestNotice");
+                    if (raw instanceof Map) {
+                        Map<String,Object> n = new HashMap<>((Map<String,Object>)raw);
+                        upsertSharedNotification(n);
+                        currentNotifications.sort((a,b) -> Long.compare(noticeMillis(b), noticeMillis(a)));
+                        pushNotifications();
+                    }
+                });
+        }
+'''
+          repl='''        if (companyId != null && companyId.length() > 0) {
+            notificationFallbackListener = database.collection("companies").document(companyId).collection("notices").limit(50)
+                .addSnapshotListener((snap,error) -> { if (error == null && snap != null) consumeSharedNoticeSnapshot(snap); });
+            notificationCompanyListener = database.collection("companies").document(companyId)
+                .addSnapshotListener((doc,error) -> {
+                    if (error != null || doc == null || !doc.exists()) return;
+                    Object raw = doc.get("latestNotice");
+                    if (raw instanceof Map) {
+                        Map<String,Object> n = new HashMap<>((Map<String,Object>)raw);
+                        upsertSharedNotification(n);
+                        currentNotifications.sort((a,b) -> Long.compare(noticeMillis(b), noticeMillis(a)));
+                        pushNotifications();
+                    }
+                });
+            notificationDirectListener = database.collection("notifications").whereEqualTo("companyId", companyId).limit(50)
+                .addSnapshotListener((snap,error) -> { if (error == null && snap != null) consumeSharedNoticeSnapshot(snap); });
+        }
+'''
+          if needle not in s: raise SystemExit("notification worker block not found")
+          s=s.replace(needle,repl)
+          s=s.replace("        if (notificationCodeListener != null) notificationCodeListener.remove(); notificationCodeListener = null;\n    }","        if (notificationCodeListener != null) notificationCodeListener.remove(); notificationCodeListener = null;\n        if (notificationDirectListener != null) notificationDirectListener.remove(); notificationDirectListener = null;\n    }")
+          java.write_text(s)
+          PY
+
+          node --check project/app/src/main/assets/app.js
+          grep -q "versionName '3.2.18'" project/app/build.gradle
+          grep -q "diamondDeleteNow" project/app/src/main/assets/app.html
+          grep -q "notificationDirectListener" project/app/src/main/java/com/example/diamonddiary/MainActivity.java
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build release APK
+        run: gradle -p project :app:assembleRelease --stacktrace
+
+      - name: Align APK for modern Android and package source
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/zipalign" -P 16 -f -v 4             project/app/build/outputs/apk/release/app-release-unsigned.apk             MB-Diamond-Diary-v3.2.18-aligned-unsigned.apk
+          "$BT/zipalign" -c -P 16 -v 4 MB-Diamond-Diary-v3.2.18-aligned-unsigned.apk
+          (cd project && zip -qr ../MB-Diamond-Diary-v3.2.18-source.zip .)
+          mkdir -p android-sign-tools/lib
+          cp "$BT/apksigner" android-sign-tools/
+          cp "$BT/lib/apksigner.jar" android-sign-tools/lib/
+
+      - name: Upload APK and source
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.2.18-build
+          path: |
+            MB-Diamond-Diary-v3.2.18-aligned-unsigned.apk
+            MB-Diamond-Diary-v3.2.18-source.zip
+            android-sign-tools
