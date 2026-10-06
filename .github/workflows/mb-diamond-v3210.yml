@@ -1,0 +1,75 @@
+name: Build MB Diamond Diary v3.2.10
+
+on:
+  push:
+    branches:
+      - mb-diamond-diary-v3.1-build
+    paths:
+      - 'tools/mb_patch_v332.py'
+      - '.github/workflows/mb-diamond-v3210.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Restore signing key
+        uses: actions/cache@v4
+        with:
+          path: .mb-signing/debug.keystore
+          key: mb-diamond-diary-debug-signing-v1
+      - name: Restore source
+        run: |
+          cat mbparts/part-00 mbparts/part-01 mbparts/part-02 mbparts/part-03 mbparts/part-04 mbparts/part-05a mbparts/part-05b mbparts/part-05c > source.b64
+          base64 -d source.b64 > source.zip
+          mkdir mbbuild
+          unzip -q source.zip -d mbbuild
+      - name: Apply patches
+        run: |
+          python tools/mb_patch_v313.py mbbuild
+          python tools/mb_patch_v316.py mbbuild
+          python tools/mb_patch_v317.py mbbuild
+          python tools/mb_patch_v318.py mbbuild
+          python tools/mb_patch_v319.py mbbuild
+          python tools/mb_patch_v320.py mbbuild
+          python tools/mb_patch_v322.py mbbuild
+          python tools/mb_patch_v323.py mbbuild
+          python tools/mb_patch_v324.py mbbuild
+          python tools/mb_patch_v325.py mbbuild
+          python tools/mb_patch_v326.py mbbuild
+          python tools/mb_patch_v327.py mbbuild
+          python tools/mb_patch_v328.py mbbuild
+          python tools/mb_patch_v329.py mbbuild
+          python tools/mb_patch_v330.py mbbuild
+          python tools/mb_patch_v331.py mbbuild
+          python tools/mb_patch_v332.py mbbuild
+      - name: Validate worker lists and remove
+        run: |
+          grep -q "versionName '3.2.10'" mbbuild/app/build.gradle
+          grep -q 'GoogleSignInClient' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'હીરા કારીગર ·' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'કલાક કારીગર ·' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'રીમુવ કારીગર' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+      - name: Increase Gradle memory
+        run: |
+          printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8\norg.gradle.workers.max=1\n' >> mbbuild/gradle.properties
+      - name: Build APK
+        run: gradle -p mbbuild :app:assembleDebug --stacktrace --no-daemon --max-workers=1
+      - name: Sign and verify APK
+        run: |
+          test -f .mb-signing/debug.keystore
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" sign --ks .mb-signing/debug.keystore --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android --out MB-Diamond-Diary-v3.2.10-worker-lists-login.apk mbbuild/app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose --print-certs MB-Diamond-Diary-v3.2.10-worker-lists-login.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.2.10-worker-lists-login
+          path: MB-Diamond-Diary-v3.2.10-worker-lists-login.apk
