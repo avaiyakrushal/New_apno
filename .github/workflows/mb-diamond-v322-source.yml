@@ -32,6 +32,7 @@ jobs:
           python tools/mb_patch_v326.py mbbuild
           python tools/mb_patch_v327.py mbbuild
           python tools/mb_patch_v328.py mbbuild
+          python tools/mb_patch_v329.py mbbuild
       - name: Verify v3.2.7 source
         run: |
           grep -q "versionName '3.2.7'" mbbuild/app/build.gradle
@@ -39,6 +40,7 @@ jobs:
           grep -q 'collection("members")' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'loadBossWorkersFromUsers' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
           grep -q 'watchWorkerNoticeSubcollections' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q 'final String sharedText = clean' mbbuild/app/src/main/java/com/example/diamonddiary/MainActivity.java
       - name: Package source
         run: |
           cd mbbuild
