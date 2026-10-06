@@ -96,5 +96,5 @@ helper=marker+"""
 s=s.replace(marker,helper,1)
 
 java.write_text(j); html.write_text(h); js.write_text(s)
-b=root/'app/build.gradle'; t=b.read_text(); t=re.sub(r'versionCodes+d+','versionCode 63',t,1); t=re.sub(r"versionNames+'[^']+'","versionName '3.2.5'",t,1); b.write_text(t)
+b=root/'app/build.gradle'; t=b.read_text(); t=re.sub(r'versionCode\\s+\\d+','versionCode 63',t,1); t=re.sub(r"versionName\\s+'[^']+'","versionName '3.2.5'",t,1); b.write_text(t)
 print('v3.2.5 membership validation and explicit decimal-point controls applied')
