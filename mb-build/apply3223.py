@@ -79,11 +79,11 @@ js.write_text(s)
 java=root/"app/src/main/java/com/example/diamonddiary/MainActivity.java"
 s=java.read_text()
 
-s=s.replace("    private ListenerRegistration notificationUserListener;
-", "    private ListenerRegistration notificationUserListener;
+s=s.replace("""    private ListenerRegistration notificationUserListener;
+""", """    private ListenerRegistration notificationUserListener;
     private long bossWorkerRenderRevision = 0L;
     private final Set<String> deletedNoticeIds = new HashSet<>();
-")
+""")
 
 old="""    private void renderBossWorkerDocuments(List<DocumentSnapshot> docs, String companyId) {
         String month = currentMonthKey();
@@ -110,9 +110,9 @@ new="""    private void renderBossWorkerDocuments(List<DocumentSnapshot> docs, S
 if old not in s: raise SystemExit("renderBossWorkerDocuments block not found")
 s=s.replace(old,new)
 s=s.replace("private void refreshBossDashboardFromEntries(List<DocumentSnapshot> workers, String companyId, String month) {", "private void refreshBossDashboardFromEntries(List<DocumentSnapshot> workers, String companyId, String month, long revision) {")
-s=s.replace('if (active == null || !"boss".equals(currentRole) || currentCompanyId == null || !companyId.equals(currentCompanyId)) return;
-                        renderBossWorkers(workers, live, month);', 'if (active == null || !"boss".equals(currentRole) || currentCompanyId == null || !companyId.equals(currentCompanyId) || revision != bossWorkerRenderRevision) return;
-                        renderBossWorkers(workers, live, month);')
+s=s.replace("""if (active == null || !"boss".equals(currentRole) || currentCompanyId == null || !companyId.equals(currentCompanyId)) return;
+                        renderBossWorkers(workers, live, month);""", """if (active == null || !"boss".equals(currentRole) || currentCompanyId == null || !companyId.equals(currentCompanyId) || revision != bossWorkerRenderRevision) return;
+                        renderBossWorkers(workers, live, month);""")
 
 old_filters="""        LinearLayout filters = new LinearLayout(this);
         filters.setOrientation(LinearLayout.HORIZONTAL);
@@ -192,19 +192,19 @@ new_style="""    private void styleBossWorkerFilters(Button all, Button diamond,
 if old_style not in s: raise SystemExit("boss filter style block not found")
 s=s.replace(old_style,new_style)
 
-s=s.replace('TextView title = sectionText(("diamond".equals(mode) ? "હીરા ડિપાર્ટમેન્ટ" : "કલાક ડિપાર્ટમેન્ટ") + " · " + workers.size() + " કારીગર");', 'String sectionName = "all".equals(mode) ? "બધા કારીગર" : ("diamond".equals(mode) ? "હીરા ડિપાર્ટમેન્ટ" : "કલાક ડિપાર્ટમેન્ટ");
-        TextView title = sectionText(sectionName + " · " + workers.size() + " કારીગર");')
-s=s.replace('if ("diamond".equals(mode)) workText = "કુલ કામ: " + pieces + " નંગ";
-        else {', 'if ("all".equals(mode)) {
+s=s.replace("""TextView title = sectionText(("diamond".equals(mode) ? "હીરા ડિપાર્ટમેન્ટ" : "કલાક ડિપાર્ટમેન્ટ") + " · " + workers.size() + " કારીગર");""", """String sectionName = "all".equals(mode) ? "બધા કારીગર" : ("diamond".equals(mode) ? "હીરા ડિપાર્ટમેન્ટ" : "કલાક ડિપાર્ટમેન્ટ");
+        TextView title = sectionText(sectionName + " · " + workers.size() + " કારીગર");""")
+s=s.replace("""if ("diamond".equals(mode)) workText = "કુલ કામ: " + pieces + " નંગ";
+        else {""", """if ("all".equals(mode)) {
             String h = String.format(Locale.US, "%.2f", hours); if (h.endsWith(".00")) h = h.substring(0, h.length()-3);
             workText = "હીરા: " + pieces + " નંગ  ·  કલાક: " + h;
         } else if ("diamond".equals(mode)) workText = "કુલ કામ: " + pieces + " નંગ";
-        else {')
+        else {""")
 
-s=s.replace('worker.put("removed", false);
-                    database.collection("workers")', 'worker.put("removed", false);
+s=s.replace("""worker.put("removed", false);
+                    database.collection("workers")""", """worker.put("removed", false);
                     worker.put("joinedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-                    database.collection("workers")')
+                    database.collection("workers")""")
 
 anchor="""    private void upsertSharedNotification(Map<String,Object> incoming) {
 """
@@ -283,9 +283,9 @@ helpers="""    private void rememberDeletedNotice(String id) {
 if anchor not in s: raise SystemExit("upsert anchor not found")
 s=s.replace(anchor,helpers+anchor)
 
-s=s.replace('        if (id.length() == 0) return;
-        for (int i=0; i<currentNotifications.size(); i++) {', '        if (id.length() == 0 || isNoticeDeleted(id)) return;
-        for (int i=0; i<currentNotifications.size(); i++) {',1)
+s=s.replace("""        if (id.length() == 0) return;
+        for (int i=0; i<currentNotifications.size(); i++) {""", """        if (id.length() == 0 || isNoticeDeleted(id)) return;
+        for (int i=0; i<currentNotifications.size(); i++) {""",1)
 s=s.replace('for (DocumentSnapshot d : snap.getDocuments()) upsertSharedNotification(sharedNoticeFromDocument(d));', 'for (DocumentSnapshot d : snap.getDocuments()) { Map<String,Object> n=sharedNoticeFromDocument(d); String id=String.valueOf(n.get("id") == null ? "" : n.get("id")); if(!isNoticeDeleted(id)) upsertSharedNotification(n); }')
 
 s=s.replace("""                    Object raw = doc.get("latestNotice");
