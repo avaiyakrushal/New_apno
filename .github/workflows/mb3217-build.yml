@@ -1,0 +1,29 @@
+name: Build MB Diamond Diary v3.2.17
+on:
+  push:
+    branches: [mb-diamond-diary-v3.2.17-build]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct source
+        run: |
+          cat mb-build/part*.txt | base64 -d > mb-source.zip
+          mkdir -p project
+          unzip -q mb-source.zip -d project
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build unsigned release APK
+        run: gradle -p project :app:assembleRelease --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.2.17-unsigned
+          path: project/app/build/outputs/apk/release/app-release-unsigned.apk
