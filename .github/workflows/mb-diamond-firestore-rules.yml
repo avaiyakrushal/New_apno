@@ -1,0 +1,49 @@
+name: Deploy MB Diamond Firestore Rules
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mb-diamond-diary-v3.1-build
+    paths:
+      - 'firestore.rules'
+      - 'firebase.json'
+      - '.github/workflows/mb-diamond-firestore-rules.yml'
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    env:
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DIAMOND_DIARY_42F95 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate rules files
+        run: |
+          test -s firestore.rules
+          test -s firebase.json
+          grep -q 'companyCodes' firestore.rules
+          grep -q 'members' firestore.rules
+          grep -q 'notices' firestore.rules
+      - name: Detect Firebase credentials
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "Firebase service-account credential is available."
+          elif [ -n "$FIREBASE_TOKEN" ]; then
+            echo "Firebase token credential is available."
+          else
+            echo "::error::No Firebase deploy credential is configured in GitHub Actions secrets."
+            exit 2
+          fi
+      - name: Deploy Firestore rules
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+            export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+            npx --yes firebase-tools@latest deploy --only firestore:rules --project diamond-diary-42f95 --non-interactive
+          else
+            npx --yes firebase-tools@latest deploy --only firestore:rules --project diamond-diary-42f95 --token "$FIREBASE_TOKEN" --non-interactive
+          fi
