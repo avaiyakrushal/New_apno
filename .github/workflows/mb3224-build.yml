@@ -1,0 +1,75 @@
+name: Build MB Diamond Diary v3.2.24
+on:
+  push:
+    branches: [mb-diamond-diary-v3.2.24-build]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct source
+        run: |
+          cat mb-build/part*.txt | base64 -d > mb-source.zip
+          mkdir -p project
+          unzip -q mb-source.zip -d project
+
+      - name: Apply complete patch chain
+        run: |
+          python3 mb-build/apply3218.py project
+          python3 mb-build/apply3219.py project
+          python3 mb-build/apply3220.py project
+          python3 mb-build/apply3221.py project
+          python3 mb-build/apply3222.py project
+          python3 mb-build/apply3223.py project
+          python3 mb-build/apply3224.py project
+          node --check project/app/src/main/assets/app.js
+
+      - name: Worker list regression checks
+        run: |
+          set -e
+          M=project/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          grep -q "versionName '3.2.24'" project/app/build.gradle
+          grep -q "bossWorkerLoadRevision" "$M"
+          grep -q "loadBossUnionCompanyMembers" "$M"
+          grep -q "loadBossUnionCodeMembers" "$M"
+          grep -q "loadBossUnionUsers" "$M"
+          grep -q 'whereEqualTo("companyId", companyId)' "$M"
+          grep -q 'whereEqualTo("bossUid", companyId)' "$M"
+          grep -q 'whereEqualTo("companyCode", companyCode)' "$M"
+          grep -q 'joinedAtMillis' "$M"
+          grep -q 'primaryButton("બધા")' "$M"
+          echo "v3.2.24 worker list regression checks passed"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build release APK
+        run: gradle -p project :app:assembleRelease --stacktrace
+
+      - name: Align APK and package source
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/zipalign" -P 16 -f -v 4             project/app/build/outputs/apk/release/app-release-unsigned.apk             MB-Diamond-Diary-v3.2.24-aligned-unsigned.apk
+          "$BT/zipalign" -c -P 16 -v 4 MB-Diamond-Diary-v3.2.24-aligned-unsigned.apk
+          (cd project && zip -qr ../MB-Diamond-Diary-v3.2.24-source.zip .)
+          mkdir -p android-sign-tools/lib
+          cp "$BT/apksigner" android-sign-tools/
+          cp "$BT/lib/apksigner.jar" android-sign-tools/lib/
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.2.24-build
+          path: |
+            MB-Diamond-Diary-v3.2.24-aligned-unsigned.apk
+            MB-Diamond-Diary-v3.2.24-source.zip
+            android-sign-tools
