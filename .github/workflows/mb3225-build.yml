@@ -25,10 +25,8 @@ jobs:
 
       - name: Apply v3.2.25 fixes
         run: |
-          base64 -d mb-build/apply3225.patch.b64 > apply3225.patch
-          cd project
-          patch -p1 < ../apply3225.patch
-          node --check app/src/main/assets/app.js
+          python3 mb-build/apply3225.py project
+          node --check project/app/src/main/assets/app.js
 
       - name: Regression checks
         run: |
