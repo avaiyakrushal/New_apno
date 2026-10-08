@@ -141,22 +141,9 @@ new="""        page = new WebView(this);
 if old not in s: raise SystemExit("page init anchor missing")
 s=s.replace(old,new,1)
 
-old="""        page.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                updateAccountLabel();
-                updateRoleInPage();
-                pushCloudEntries();
-                pushCloudSettings();
-                pushNotifications();
-                pushWorkerProfileToPage();
-                if (pendingBossWebScreen != null) {
-                    String target = pendingBossWebScreen;
-                    pendingBossWebScreen = null;
-                    page.evaluateJavascript("(function(){var b=document.querySelector('[data-screen=\"" + target + "\"]');if(b)b.click();})();", null);
-                }
-            }
-        });
-"""
+start=s.find("        page.setWebViewClient(new WebViewClient() {")
+end=s.find("        page.setWebChromeClient", start)
+if start < 0 or end < 0: raise SystemExit("webviewclient boundaries missing")
 new="""        page.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 if (url != null && url.startsWith("file:///android_asset/app.html")) {
@@ -181,7 +168,7 @@ new="""        page.setWebViewClient(new WebViewClient() {
                 if (pendingBossWebScreen != null) {
                     String target = pendingBossWebScreen;
                     pendingBossWebScreen = null;
-                    page.evaluateJavascript("(function(){var b=document.querySelector('[data-screen=\"" + target + "\"]');if(b)b.click();})();", null);
+                    page.evaluateJavascript("(function(){var b=document.querySelector(\\'[data-screen=\\\"" + target + "\\"]\\');if(b)b.click();})();", null);
                 }
             }
 
@@ -195,8 +182,7 @@ new="""        page.setWebViewClient(new WebViewClient() {
             }
         });
 """
-if old not in s: raise SystemExit("webviewclient block missing")
-s=s.replace(old,new,1)
+s=s[:start]+new+s[end:]
 
 old="""        createPendingScreen(root);
         createAdminScreen(root);
