@@ -154,5 +154,194 @@ new="""        database.collection("diaryEntries").document(user.getUid()).colle
 if old not in s: raise SystemExit("deleteEntry anchor missing")
 s=s.replace(old,new,1)
 
+
+# Reinstall/self-heal: do not let one denied mirror path block canonical worker membership.
+old="""    private com.google.android.gms.tasks.Task<Void> commitWorkerMembershipBatch(FirebaseUser user, Map<String,Object> worker, String companyId, String companyCode) {
+        Map<String,Object> membership = normalizedWorkerMembership(user, worker, companyId, companyCode);
+        membership.put("joinedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        com.google.firebase.firestore.WriteBatch batch = database.batch();
+        batch.set(database.collection("workers").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        batch.set(database.collection("users").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyCode != null && companyCode.length() > 0)
+            batch.set(database.collection("companyCodes").document(companyCode).collection("members").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyId != null && companyId.length() > 0)
+            batch.set(database.collection("companies").document(companyId).collection("members").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        return batch.commit();
+    }
+"""
+new="""    private com.google.android.gms.tasks.Task<Void> commitWorkerMembershipBatch(FirebaseUser user, Map<String,Object> worker, String companyId, String companyCode) {
+        Map<String,Object> membership = normalizedWorkerMembership(user, worker, companyId, companyCode);
+        membership.put("joinedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+
+        com.google.android.gms.tasks.Task<Void> workerTask = database.collection("workers").document(user.getUid())
+            .set(membership, com.google.firebase.firestore.SetOptions.merge());
+        com.google.android.gms.tasks.Task<Void> userTask = database.collection("users").document(user.getUid())
+            .set(membership, com.google.firebase.firestore.SetOptions.merge());
+
+        if (companyCode != null && companyCode.length() > 0)
+            database.collection("companyCodes").document(companyCode).collection("members").document(user.getUid())
+                .set(membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyId != null && companyId.length() > 0)
+            database.collection("companies").document(companyId).collection("members").document(user.getUid())
+                .set(membership, com.google.firebase.firestore.SetOptions.merge());
+
+        return com.google.android.gms.tasks.Tasks.whenAll(workerTask, userTask);
+    }
+"""
+if old not in s: raise SystemExit("commitWorkerMembershipBatch anchor missing")
+s=s.replace(old,new,1)
+
+old="""    private void mirrorWorkerMembership(FirebaseUser user, Map<String,Object> worker, String companyId, String companyCode) {
+        if (user == null || worker == null) return;
+        Map<String,Object> membership = normalizedWorkerMembership(user, worker, companyId, companyCode);
+        com.google.firebase.firestore.WriteBatch batch = database.batch();
+        batch.set(database.collection("users").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyCode != null && companyCode.length() > 0)
+            batch.set(database.collection("companyCodes").document(companyCode).collection("members").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyId != null && companyId.length() > 0)
+            batch.set(database.collection("companies").document(companyId).collection("members").document(user.getUid()), membership, com.google.firebase.firestore.SetOptions.merge());
+        batch.commit();
+    }
+"""
+new="""    private void mirrorWorkerMembership(FirebaseUser user, Map<String,Object> worker, String companyId, String companyCode) {
+        if (user == null || worker == null) return;
+        Map<String,Object> membership = normalizedWorkerMembership(user, worker, companyId, companyCode);
+        database.collection("users").document(user.getUid())
+            .set(membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyCode != null && companyCode.length() > 0)
+            database.collection("companyCodes").document(companyCode).collection("members").document(user.getUid())
+                .set(membership, com.google.firebase.firestore.SetOptions.merge());
+        if (companyId != null && companyId.length() > 0)
+            database.collection("companies").document(companyId).collection("members").document(user.getUid())
+                .set(membership, com.google.firebase.firestore.SetOptions.merge());
+    }
+"""
+if old not in s: raise SystemExit("mirrorWorkerMembership anchor missing")
+s=s.replace(old,new,1)
+
+anchor="""    private void showWorkerState(FirebaseUser user) {
+"""
+helper="""    private void restoreWorkerMembershipAfterReinstall(FirebaseUser user) {
+        if (user == null) { showWorkerJoin(); return; }
+        final String uid = user.getUid();
+        database.collection("users").document(uid).get(com.google.firebase.firestore.Source.SERVER)
+            .addOnCompleteListener(task -> {
+                FirebaseUser active = auth.getCurrentUser();
+                if (active == null || !uid.equals(active.getUid())) return;
+                if (!task.isSuccessful() || task.getResult() == null || !task.getResult().exists()) {
+                    showWorkerJoin();
+                    workerJoinStatus.setText("કંપની કોડ નાખીને ફરી જોડાઓ");
+                    return;
+                }
+                DocumentSnapshot profile = task.getResult();
+                String role = safe(profile.getString("role"));
+                String companyId = safe(profile.getString("companyId"));
+                String companyName = safe(profile.getString("companyName"));
+                String companyCode = safe(profile.getString("companyCode"));
+                String mode = safe(profile.getString("mode"));
+                if (!"worker".equals(role) || companyId.length() == 0) {
+                    showWorkerJoin();
+                    workerJoinStatus.setText("કંપની કોડ નાખીને ફરી જોડાઓ");
+                    return;
+                }
+                if (!("hour".equals(mode) || "diamond".equals(mode))) mode = "diamond";
+                final String fixedMode = mode;
+                if (companyName.length() == 0) {
+                    database.collection("companies").document(companyId).get(com.google.firebase.firestore.Source.SERVER)
+                        .addOnCompleteListener(companyTask -> {
+                            String name = "";
+                            String code = companyCode;
+                            if (companyTask.isSuccessful() && companyTask.getResult() != null && companyTask.getResult().exists()) {
+                                name = safe(companyTask.getResult().getString("name"));
+                                if (code.length() == 0) code = safe(companyTask.getResult().getString("code"));
+                            }
+                            finishWorkerMembershipRestore(active, profile, companyId, name, code, fixedMode);
+                        });
+                } else {
+                    finishWorkerMembershipRestore(active, profile, companyId, companyName, companyCode, fixedMode);
+                }
+            });
+    }
+
+    private void finishWorkerMembershipRestore(FirebaseUser user, DocumentSnapshot profile, String companyId, String companyName, String companyCode, String mode) {
+        if (user == null || companyId == null || companyId.length() == 0) { showWorkerJoin(); return; }
+        currentCompanyId = companyId;
+        currentCompanyName = companyName == null ? "" : companyName;
+        currentCompanyCode = companyCode == null ? "" : companyCode;
+        currentMode = ("hour".equals(mode) || "diamond".equals(mode)) ? mode : "diamond";
+
+        getPreferences(MODE_PRIVATE).edit()
+            .putString("worker_company_id", currentCompanyId)
+            .putString("worker_company_name", currentCompanyName)
+            .putString("worker_company_code", currentCompanyCode)
+            .putString("worker_mode", currentMode)
+            .putBoolean("worker_joined", true)
+            .apply();
+
+        Map<String,Object> worker = new HashMap<>();
+        if (profile != null && profile.getData() != null) worker.putAll(profile.getData());
+        worker.put("companyId", currentCompanyId);
+        worker.put("bossUid", currentCompanyId);
+        worker.put("companyName", currentCompanyName);
+        worker.put("companyCode", currentCompanyCode);
+        worker.put("mode", currentMode);
+        worker.put("active", true);
+        worker.put("removed", false);
+
+        commitWorkerMembershipBatch(user, worker, currentCompanyId, currentCompanyCode)
+            .addOnCompleteListener(t -> grantRole(user, "worker", currentMode));
+    }
+
+"""
+if anchor not in s: raise SystemExit("showWorkerState insertion anchor missing")
+s=s.replace(anchor,helper+anchor,1)
+
+old="""                    } else showWorkerJoin();
+                    return;
+                }
+"""
+new="""                    } else restoreWorkerMembershipAfterReinstall(active);
+                    return;
+                }
+"""
+if old not in s: raise SystemExit("missing-worker restore anchor missing")
+s=s.replace(old,new,1)
+
+old="""                    currentCompanyId = null;
+                    currentCompanyName = null;
+                    currentCompanyCode = null;
+                    showWorkerJoin();
+                    workerJoinStatus.setText("કંપની કોડ નાખીને કંપનીમાં જોડાઓ");
+                    return;
+"""
+new="""                    currentCompanyId = null;
+                    currentCompanyName = null;
+                    currentCompanyCode = null;
+                    restoreWorkerMembershipAfterReinstall(active);
+                    return;
+"""
+if old not in s: raise SystemExit("incomplete-worker restore anchor missing")
+s=s.replace(old,new,1)
+
+# If direct boss diary listener is denied/stale, immediately fall back to worker summary doc.
+old="""                .addSnapshotListener((snap,error) -> {
+                    FirebaseUser active = auth.getCurrentUser();
+                    if (error != null || snap == null || active == null || !"boss".equals(currentRole)
+                        || currentCompanyId == null || !currentCompanyId.equals(companyId)) return;
+"""
+new="""                .addSnapshotListener((snap,error) -> {
+                    FirebaseUser active = auth.getCurrentUser();
+                    if (error != null || snap == null) {
+                        bossLiveEntrySummaries.remove(uid);
+                        renderBossLiveDashboard();
+                        return;
+                    }
+                    if (active == null || !"boss".equals(currentRole)
+                        || currentCompanyId == null || !currentCompanyId.equals(companyId)) return;
+"""
+if old not in s: raise SystemExit("boss entry listener fallback anchor missing")
+s=s.replace(old,new,1)
+
+
 p.write_text(s)
 print("v3.2.33 Hira/Kalak cross-device sync repair applied")
