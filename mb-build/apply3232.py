@@ -5,7 +5,7 @@ root=Path(sys.argv[1] if len(sys.argv)>1 else "project")
 
 p=root/"app/build.gradle"
 s=p.read_text()
-s=s.replace("versionCode 89","versionCode 90").replace("versionName '3.2.31'","versionName '3.2.32'")
+s=s.replace("versionCode 88","versionCode 90").replace("versionName '3.2.30'","versionName '3.2.32'")
 p.write_text(s)
 
 p=root/"app/src/main/java/com/example/diamonddiary/MainActivity.java"
