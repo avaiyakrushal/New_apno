@@ -62,7 +62,9 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build release APK
-        run: gradle -p project :app:assembleRelease --stacktrace
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+        run: gradle -p project --no-daemon --max-workers=1 :app:assembleRelease --stacktrace
 
       - name: Align APK and package source
         run: |
