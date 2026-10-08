@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruct v3.2.32 source
+      - name: Reconstruct stable v3.2.30 + Super Admin source
         run: |
           cat mb-build/part*.txt | base64 -d > mb-source.zip
           mkdir -p project
@@ -28,7 +28,6 @@ jobs:
           python3 mb-build/apply3228.py project
           python3 mb-build/apply3229.py project
           python3 mb-build/apply3230.py project
-          python3 mb-build/apply3231.py project
           python3 mb-build/apply3232.py project
 
       - name: Apply v3.2.33 Hira sync repair
@@ -48,8 +47,10 @@ jobs:
           grep -q "refreshWorkerEntriesServerFallback" "$M"
           grep -q "Source.SERVER" "$M"
           grep -q "Super Admin Dashboard" "$M"
-          grep -q "webLoadWatchdog" "$M"
           grep -q "EVENTUAL_SYNC_INTERVAL_MS" "$M"
+          grep -q "restoreWorkerMembershipAfterReinstall" "$M"
+          grep -q "finishWorkerMembershipRestore" "$M"
+          grep -q "Tasks.whenAll" "$M"
           echo "v3.2.33 sync regression checks passed"
 
       - uses: actions/setup-java@v4
