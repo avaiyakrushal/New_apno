@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruct v3.2.31 source
+      - name: Reconstruct stable v3.2.30 source
         run: |
           cat mb-build/part*.txt | base64 -d > mb-source.zip
           mkdir -p project
@@ -28,7 +28,6 @@ jobs:
           python3 mb-build/apply3228.py project
           python3 mb-build/apply3229.py project
           python3 mb-build/apply3230.py project
-          python3 mb-build/apply3231.py project
 
       - name: Apply v3.2.32 Super Admin
         run: |
@@ -49,7 +48,8 @@ jobs:
           grep -q "editAdminCompanyName" "$M"
           grep -q "adminCompanyBlocked" "$M"
           grep -q "આ કંપની Super Admin દ્વારા બંધ છે" "$M"
-          grep -q "webLoadWatchdog" "$M"
+          grep -q "bossEntryListeners" "$M"
+          grep -q "refreshBossWorkersServerFallback" "$M"
           grep -q "EVENTUAL_SYNC_INTERVAL_MS" "$M"
           echo "v3.2.32 Super Admin regression checks passed"
 
