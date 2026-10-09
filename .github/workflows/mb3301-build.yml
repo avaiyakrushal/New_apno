@@ -1,0 +1,82 @@
+name: Build MB Diamond Diary v3.3.1 Google Login
+on:
+  push:
+    branches: [mb-diamond-diary-v3.3.1-google-login]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct stable v3.2.29 source
+        run: |
+          cat mb-build/part*.txt | base64 -d > mb-source.zip
+          mkdir -p project
+          unzip -q mb-source.zip -d project
+          python3 mb-build/apply3218.py project
+          python3 mb-build/apply3219.py project
+          python3 mb-build/apply3220.py project
+          python3 mb-build/apply3221.py project
+          python3 mb-build/apply3222.py project
+          python3 mb-build/apply3223.py project
+          python3 mb-build/apply3224.py project
+          python3 mb-build/apply3225.py project
+          python3 mb-build/apply3226.py project
+          python3 mb-build/apply3227.py project
+          python3 mb-build/apply3228.py project
+          python3 mb-build/apply3229.py project
+
+      - name: Apply clean v3.3.0 UID schema
+        run: python3 mb-build/apply3300.py project
+
+      - name: Apply v3.3.1 Google login fix
+        run: |
+          python3 mb-build/apply3301.py project
+          node --check project/app/src/main/assets/app.js
+
+      - name: Regression checks
+        run: |
+          set -e
+          M=project/app/src/main/java/com/example/diamonddiary/MainActivity.java
+          G=project/app/build.gradle
+          grep -q "versionName '3.3.1'" "$G"
+          grep -q "versionCode 101" "$G"
+          grep -q "play-services-auth:21.3.0" "$G"
+          grep -q "startLegacyGoogleSignIn" "$M"
+          grep -q "RC_GOOGLE_SIGN_IN" "$M"
+          grep -q "firebaseSignInWithGoogleToken" "$M"
+          grep -q "Google Sign-In error code" "$M"
+          grep -q 'schemaVersion", "3.3"' "$M"
+          grep -q 'bossEntryListeners' "$M"
+          echo "v3.3.1 Google login regression checks passed"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build release APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+        run: gradle -p project --no-daemon --max-workers=1 :app:assembleRelease --stacktrace
+
+      - name: Align APK and package source
+        run: |
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          "$BT/zipalign" -P 16 -f -v 4             project/app/build/outputs/apk/release/app-release-unsigned.apk             MB-Diamond-Diary-v3.3.1-aligned-unsigned.apk
+          "$BT/zipalign" -c -P 16 -v 4 MB-Diamond-Diary-v3.3.1-aligned-unsigned.apk
+          (cd project && zip -qr ../MB-Diamond-Diary-v3.3.1-source.zip .)
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: MB-Diamond-Diary-v3.3.1-google-login-build
+          path: |
+            MB-Diamond-Diary-v3.3.1-aligned-unsigned.apk
+            MB-Diamond-Diary-v3.3.1-source.zip
